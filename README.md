@@ -14,3 +14,28 @@ The idea of homomorphic encryption was proposed in the 70s as a solution to priv
 ## Developers
 
 Haotian Weng, Hanna Suominen, Artem Lenskiy
+
+
+# Applications
+To demonstrate the capabilities of the proposed framework we present a number of use cases.
+
+## 1. Moving Average Convergence Divergence with SEAL
+
+In this application, we demonstrate an analogous to Numer.ai system implemented with the HTSA library. In our scenario a set of traders receive encrypted price quotes, analyse the prices in real time, and draw a trading decision (if any). The trading decision in encrypted form is sent back to the server where it is decrypted and facilitated.
+
+## 2. Diabetes diagnosis on encrypted heart rate variability
+
+In this application, HETSA library is employed to detect diabetes through the analysis of encrypted heart rate variability (HRV). HRV is usually measured by a wearable device (e.g. smartwatch) and is transmitted over the Internet in an encrypted form to a remote server for further processing. In order to make a diagnosis, the HETSA implements spectral analysis and linear classifiers. 
+
+# Building
+
+### Dependencies
+Microsoft SEAL library
+cmake
+gcc/g++
+### Getting started
+````
+cmake .
+make
+./main
+````
