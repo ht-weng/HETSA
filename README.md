@@ -30,9 +30,9 @@ In this application, HETSA library is employed to detect diabetes through the an
 # Building
 
 ### Dependencies
-Microsoft SEAL library
-cmake
-gcc/g++
+Microsoft SEAL library  
+cmake  
+gcc/g++   
 ### Getting started
 ````
 cmake .
