@@ -1,4 +1,4 @@
-# Homomorphically Encrypted Time Series Analysis (HETSA)
+# Analysis of Homomorphically Encrypted Time Series  (HETSA)
 
 ## Statement 
 The primary focus of the project is to develop and implement tools for storing, representing, and analysing encrypted time-series data. Furthermore, the proposed representation and bootstrapping algorithm will allow for real-time analysis and decision making. The expected impact of this research project is twofold. Firstly, the proposed framework will lay a foundation for further research and development of methods of time series analysis. The developed tools will serve as building blocks for more sophisticated and advanced machine learning algorithms such as recurrent neural networks. Secondly, the proposed framework implemented in an (HETSA) open-source library, will be ready to use and applied for domain-specific time-series data. This will consecutively ignite further research as well open up new application areas.
