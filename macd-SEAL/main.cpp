@@ -249,10 +249,10 @@ inline vector<Ciphertext> slice(vector<Ciphertext>& v, int start=0, int end=-1) 
         newlen = end-start;
     }
 
-    vector<Ciphertext> nv(newlen);
+    vector<Ciphertext> nv;
 
     for (int i = 0; i < newlen; i++) {
-        nv[i] = v[start+i];
+        nv.push_back(v[start+i]);
     }
     return nv;
 }
