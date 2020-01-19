@@ -31,11 +31,24 @@ In this application, HETSA library is employed to detect diabetes through the an
 
 ### Dependencies
 Microsoft SEAL library  
+HEAAN Library by Seoul National University Crypto Lab
 cmake  
-gcc/g++   
+gcc/g++ 
 ### Getting started
+#### MACD with SEAL:  
+Install [Microsoft SEAL Library](https://github.com/Microsoft/SEAL)  
 ````
+cd macd-SEAL/
 cmake .
 make
-./main
+./macd
 ````
+Run macd_seal.ipynb to visualise results.    
+#### MACD with HEAAN:  
+HEAAN Library is already included in macd-HEAAN.  
+````
+cd macd-HEAAN/
+make
+./macd
+````
+Run macd_heaan.ipynb to visualise results.  

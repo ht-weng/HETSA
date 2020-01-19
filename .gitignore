@@ -1,1 +1,6 @@
 **/.DS_Store
+macd-SEAL/macd
+macd-SEAL/CMakeFiles
+macd-SEAL/cmake_install.cmake
+macd-SEAL/CMakeCache.txt
+macd-SEAL/Makefile
