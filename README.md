@@ -46,6 +46,6 @@ HEAAN Library is included in macd-HEAAN.
 ````
 cd macd-HEAAN/run
 make
-./macd
+./MACD
 ````
 Run macd-heaan.ipynb to visualise results.  
