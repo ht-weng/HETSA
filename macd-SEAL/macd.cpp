@@ -1,3 +1,8 @@
+/*
+* Moving Average Convergence Divergence with SEAL Library
+* The results are output into the data folder
+* Run macd-heaan.ipynb to visualise the results
+*/
 #include <cstddef>
 #include <iostream>
 #include <fstream>
