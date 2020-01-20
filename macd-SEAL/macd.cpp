@@ -467,7 +467,7 @@ int main()
     }
 
     // Sample data size
-    int time_max = 500;
+    int time_max = 200;
 
     cout << "Data Import Begins" << endl;
 	cout << "\n";

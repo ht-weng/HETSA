@@ -32,6 +32,8 @@ In this application, the HETSA library is employed to detect diabetes through th
 cmake  
 gcc/g++  
 ### Getting started  
+Developed and tested on macOS Catalina.  
+Please note that the minimum RAM required is 16GB as Ciphertexts are memory-consuming.  
 #### MACD with SEAL:  
 First install [Microsoft SEAL Library](https://github.com/Microsoft/SEAL)  
 ````
