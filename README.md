@@ -28,12 +28,27 @@ In this application, the HETSA library is employed to detect diabetes through th
 # Building
 
 ### Dependencies
-Microsoft SEAL library  
+[Microsoft SEAL Library](https://github.com/Microsoft/SEAL)   
+[HEAAN Library](https://github.com/snucrypto/HEAAN)  
 cmake  
-gcc/g++   
-### Getting started
+gcc/g++  
+### Getting started  
+Developed and tested on macOS Catalina.  
+Please note that the minimum RAM required is 16GB as Ciphertexts are memory-consuming.  
+#### MACD with SEAL:  
+First install [Microsoft SEAL Library](https://github.com/Microsoft/SEAL)  
 ````
+cd macd-SEAL/
 cmake .
 make
-./main
+./macd
 ````
+Run macd-seal.ipynb to visualise results.  
+#### MACD with HEAAN:  
+HEAAN Library is included in macd-HEAAN.  
+````
+cd macd-HEAAN/run
+make
+./MACD
+````
+Run macd-heaan.ipynb to visualise results.  
