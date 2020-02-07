@@ -248,6 +248,7 @@ inline Ciphertext getSample(long time, long logq, long logp, long logn, Scheme& 
     }
     Ciphertext sample_encrypted;
     scheme.encrypt(sample_encrypted, sample, n, logp, logq);
+    delete[] sample;
     return sample_encrypted;
 }
 
@@ -263,6 +264,7 @@ inline vector<double> decryptVec(vector<Ciphertext>& ct, Scheme& scheme, SecretK
         complex<double>* val;
         val = scheme.decrypt(secretKey, ct[i]);
         res.push_back(real(val[0]));
+        delete val;
     }
     return res;
 }
@@ -281,7 +283,7 @@ int main() {
 
 	long logq = 600; // Ciphertext polynomial modulus
 	long logp = 30; // Scale
-	long logn = 10; // n = number of slots in a Ciphertext
+	long logn = 1; // n = number of slots in a Ciphertext
 	long time_max = 200; // Sample data size
 
 	SetNumThreads(8);
