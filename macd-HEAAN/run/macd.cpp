@@ -242,21 +242,22 @@ inline vector<Ciphertext> wma(vector<Ciphertext>& data, long m, Scheme &scheme, 
 // where x = m(t)*m(t-1)
 inline vector<Ciphertext> decision(vector<Ciphertext>& macd, double norm, Scheme &scheme, long logq, long logp) {
     vector<Ciphertext> decisions;
+
+    // Set up coefficients
+    complex<double> coeff1, coeff2, coeff3, coeff4, coeff5, coeff6, coeff_norm;
+    coeff1.real(0.00002635);
+    coeff2.real(-0.0003472);
+    coeff3.real(0.0052083);
+    coeff4.real(-0.2);
+	coeff5.real(0.25);
+    coeff6.real(-0.061);
+    coeff_norm.real(norm);
+
     for (int i = 1; i < macd.size(); i++) {
 
         // Store the latest two MACD signals m(t) and m(t-1)
         Ciphertext mt = macd[i];
         Ciphertext mt_1 = macd[i-1];
-
-        // Set up coefficients
-        complex<double> coeff1, coeff2, coeff3, coeff4, coeff5, coeff6, coeff_norm;
-        coeff1.real(0.00002635);
-        coeff2.real(-0.0003472);
-        coeff3.real(0.0052083);
-        coeff4.real(-0.2);
-		coeff5.real(0.25);
-        coeff6.real(-0.061);
-        coeff_norm.real(norm);
 
         // Normalise the MACD signals so that most of the data is in range [-1, 1]
         scheme.multByConstAndEqual(mt, coeff_norm, logp);

@@ -402,22 +402,23 @@ inline vector<Ciphertext> wma(vector<Ciphertext>& data, int n, int level, CKKSEn
 inline vector<Ciphertext> decision(vector<Ciphertext> macd_encrypted, int level, double norm, CKKSEncoder &encoder, 
         Encryptor &encryptor, Evaluator &evaluator, RelinKeys &relin_keys, double scale, parms_id_type *parms_ids) {
     
+     // Set up coefficients
+    Plaintext coeff1_plain, coeff2_plain, coeff3_plain, coeff4_plain, coeff5_plain, coeff6_plain, coeff_norm_plain;
+    encoder.encode(0.00002635, scale, coeff1_plain);
+    encoder.encode((-0.0003472), scale, coeff2_plain);
+    encoder.encode(0.0052083, scale, coeff3_plain);
+    encoder.encode((-0.2), scale, coeff4_plain);
+    encoder.encode(0.25, scale, coeff5_plain);
+    encoder.encode((-0.061), scale, coeff6_plain);
+    encoder.encode(norm, scale, coeff_norm_plain);
+
     vector<Ciphertext> decisions_encrypted;
+    
     for (int i = 1; i < macd_encrypted.size(); i++) {
 
         // Store the latest two MACD signals m(t) and m(t-1)
         Ciphertext mt = macd_encrypted[i];
         Ciphertext mt_1 = macd_encrypted[i-1];
-
-        // Set up coefficients
-        Plaintext coeff1_plain, coeff2_plain, coeff3_plain, coeff4_plain, coeff5_plain, coeff6_plain, coeff_norm_plain;
-        encoder.encode(0.00002635, scale, coeff1_plain);
-        encoder.encode((-0.0003472), scale, coeff2_plain);
-        encoder.encode(0.0052083, scale, coeff3_plain);
-        encoder.encode((-0.2), scale, coeff4_plain);
-        encoder.encode(0.25, scale, coeff5_plain);
-        encoder.encode((-0.061), scale, coeff6_plain);
-        encoder.encode(norm, scale, coeff_norm_plain);
 
         // Normalise the MACD signals so that most of the data is in range [-1, 1]
         evaluator.mod_switch_to_inplace(coeff_norm_plain, parms_ids[level]);
