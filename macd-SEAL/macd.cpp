@@ -22,10 +22,12 @@
 #include <assert.h>
 #include <sstream>
 #include <stdlib.h>
+#include <chrono>
 #include "seal/seal.h"
 
 using namespace std;
 using namespace seal;
+using namespace std::chrono;
 
 //********************************************************************************
 // SEAL helper functions
@@ -624,7 +626,7 @@ int main()
     int time_max = 200;
 
     cout << "Data Import Begins" << endl;
-	cout << "\n";
+    auto import_start = high_resolution_clock::now();
 
     vector<Ciphertext> prices_encrypted;
     for (int i = 0; i < time_max; i++) {
@@ -632,11 +634,16 @@ int main()
         assembleSample(sample, prices_encrypted);
     }
 
+    auto import_stop = high_resolution_clock::now();
+    auto import_duration = duration_cast<seconds>(import_stop - import_start); 
     cout << "Data Import Finished" << endl;
+    cout << "Data Import Duration:  " << import_duration.count() << " seconds" << endl;
 	cout << "\n";
 
+
+
 	cout << "MACD Analysis Begins" << endl;
-	cout << "\n";
+    auto macd_start = high_resolution_clock::now();
 
     // level 0: prices
     // level 1: wma12, wma26, wma_diff
@@ -666,11 +673,14 @@ int main()
         macd_encrypted.push_back(tmp_macd);
     }
 
+    auto macd_stop = high_resolution_clock::now();
+    auto macd_duration = duration_cast<seconds>(macd_stop - macd_start); 
 	cout << "MACD Analysis Finished" << endl;
+    cout << "MACD Analysis Duration:  " << macd_duration.count() << " seconds" << endl;
 	cout << "\n";
 
     cout << "Decision Analysis Begins" << endl;
-	cout << "\n";
+    auto decision_start = high_resolution_clock::now();
 
     // level 2: m(t-1), m(t), m(t-1)-m(t)
     // level 3: norm*m(t), norm*m(t-1) // To normalize MACD signal
@@ -684,11 +694,14 @@ int main()
     vector<Ciphertext> decisions_encrypted = decision(macd_encrypted, 2, 0.5, encoder, encryptor, 
         evaluator, relin_keys, scale, parms_ids);
 
+    auto decision_stop = high_resolution_clock::now();
+    auto decision_duration = duration_cast<seconds>(decision_stop - decision_start);
     cout << "Decision Analysis Finished" << endl;
+    cout << "Decision Analysis Duration:  " << decision_duration.count() << " seconds" << endl;
     cout << "\n";
 
     cout << "Data Export Begins" << endl;
-	cout << "\n";
+    auto export_start = high_resolution_clock::now();
     
     vector<double> wma12 = decryptVec(wma12_encrypted_sliced, decryptor, encoder);
     vector<double> wma26 = decryptVec(wma26_encrypted, decryptor, encoder);
@@ -704,7 +717,10 @@ int main()
     exportData(macd, "data/macd_seal.csv");
     exportData(decisions, "data/decisions_seal.csv");
 
+    auto export_stop = high_resolution_clock::now();
+    auto export_duration = duration_cast<seconds>(export_stop - export_start);
 	cout << "Data Export Finished" << endl;
+    cout << "Data Export Duration:  " << export_duration.count() << " seconds" << endl;
     cout << "\n";
 
     return 0;

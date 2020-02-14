@@ -22,9 +22,11 @@
 #include <assert.h>
 #include <sstream>
 #include <stdlib.h>
+#include <chrono>
 #include "../src/HEAAN.h"
 
 using namespace std;
+using namespace std::chrono;
 
 // ***************************************************************************************************
 // Helper functions
@@ -405,8 +407,8 @@ int main() {
 	SecretKey secretKey(ring);
 	Scheme scheme(secretKey, ring);
 
-	cout << "Data Import Begins" << endl;
-	cout << "\n";
+    cout << "Data Import Begins" << endl;
+    auto import_start = high_resolution_clock::now();
 
     vector<Ciphertext> prices_encrypted;
     for (int i = 0; i < time_max; i++) {
@@ -414,11 +416,15 @@ int main() {
         assembleSample(sample, prices_encrypted);   
     }
 
-	cout << "Data Import Finished" << endl;
+    auto import_stop = high_resolution_clock::now();
+    auto import_duration = duration_cast<seconds>(import_stop - import_start); 
+
+    cout << "Data Import Finished" << endl;
+    cout << "Data Import Duration:  " << import_duration.count() << " seconds" << endl;
 	cout << "\n";
 
 	cout << "MACD Analysis Begins" << endl;
-	cout << "\n";
+    auto macd_start = high_resolution_clock::now();
 
 	vector<Ciphertext> wma12_encrypted = wma(prices_encrypted, 12, scheme, logq, logp, logn);
 	vector<Ciphertext> wma12_encrypted_sliced = slice(wma12_encrypted, 14, wma12_encrypted.size());
@@ -444,19 +450,25 @@ int main() {
         macd_encrypted.push_back(tmp_macd);
     }
 
+    auto macd_stop = high_resolution_clock::now();
+    auto macd_duration = duration_cast<seconds>(macd_stop - macd_start); 
 	cout << "MACD Analysis Finished" << endl;
+    cout << "MACD Analysis Duration:  " << macd_duration.count() << " seconds" << endl;
 	cout << "\n";
 
     cout << "Decision Analysis Begins" << endl;
-	cout << "\n";
+    auto decision_start = high_resolution_clock::now();
 
 	vector<Ciphertext> decisions_encrypted = decision(macd_encrypted, 0.5, scheme, logq, logp);
 
+    auto decision_stop = high_resolution_clock::now();
+    auto decision_duration = duration_cast<seconds>(decision_stop - decision_start);
     cout << "Decision Analysis Finished" << endl;
+    cout << "Decision Analysis Duration:  " << decision_duration.count() << " seconds" << endl;
     cout << "\n";
 
     cout << "Data Export Begins" << endl;
-	cout << "\n";
+    auto export_start = high_resolution_clock::now();
     
     vector<double> wma12 = decryptVec(wma12_encrypted_sliced, scheme, secretKey);
     vector<double> wma26 = decryptVec(wma26_encrypted, scheme, secretKey);
@@ -472,7 +484,10 @@ int main() {
     exportData(macd, "../data/macd_heaan.csv");
     exportData(decisions, "../data/decisions_heaan.csv");
 
+    auto export_stop = high_resolution_clock::now();
+    auto export_duration = duration_cast<seconds>(export_stop - export_start);
 	cout << "Data Export Finished" << endl;
+    cout << "Data Export Duration:  " << export_duration.count() << " seconds" << endl;
     cout << "\n";
 
 	return 0;
