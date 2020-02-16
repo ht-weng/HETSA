@@ -35,7 +35,7 @@ cmake
 gcc/g++  
 ### Getting started  
 Developed and tested on macOS Catalina.  
-Please note that the minimum RAM required is 16GB as Ciphertexts are memory-consuming.  
+Please note that the minimum RAM required is 32GB as Ciphertexts are memory-consuming.  
 #### MACD with SEAL:  
 First install [Microsoft SEAL Library](https://github.com/Microsoft/SEAL)  
 ````
@@ -44,7 +44,6 @@ cmake .
 make
 ./macd
 ````
-Run macd-seal.ipynb to visualise results.  
 #### MACD with HEAAN:  
 HEAAN Library is included in macd-HEAAN.  
 ````
@@ -52,4 +51,5 @@ cd macd-HEAAN/run
 make
 ./MACD
 ````
-Run macd-heaan.ipynb to visualise results.  
+
+Run output-comparison.ipynb to visualise results.  

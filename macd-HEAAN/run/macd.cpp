@@ -22,9 +22,11 @@
 #include <assert.h>
 #include <sstream>
 #include <stdlib.h>
+#include <chrono>
 #include "../src/HEAAN.h"
 
 using namespace std;
+using namespace std::chrono;
 
 // ***************************************************************************************************
 // Helper functions
@@ -135,6 +137,100 @@ inline vector<Ciphertext> wma(vector<Ciphertext>& data, long m, Scheme &scheme, 
     return wma;
 }
 
+// ***************************************************************************************************
+// Old approximation approach
+// ***************************************************************************************************
+// // Return the trading decisions based on the MACD signals
+// // Denote MACD signals as m(t) where t is the time and sign function as sign()
+// // Decision(t) = (m(t-1)-m(t))*(sign(m(t-1)*m(t))-1)
+// // sign(m(t-1)*m(t))-1 indicates the turning point, where MACD signals cross the X axis
+// // m(t-1)-m(t) indicates the trend
+// // Decision(t) = 0 means "Do nothing" or "Hold"
+// // Decision(t) > 0 means "Buy"
+// // Decision(t) < 0 means "Sell"
+// // We use a polynomial approximation of tanh to approximate sign function
+// // The approximation of sign function: f(x) = 0.375*x^5 - 1.25*x^3 + 1.875*x where x = m(t)*m(t-1)
+// inline vector<Ciphertext> decision(vector<Ciphertext>& macd, Scheme &scheme, long logq, long logp) {
+//     vector<Ciphertext> decisions;
+//     for (int i = 1; i < macd.size(); i++) {
+
+//         // Store the latest two MACD signals m(t) and m(t-1)
+//         Ciphertext mt = macd[i];
+//         Ciphertext mt_1 = macd[i-1];
+
+//         // Set up coefficients
+//         complex<double> coeff1, coeff2, coeff3, offset, coeff_norm;
+//         coeff1.real(0.375);
+//         coeff2.real(-1.25);
+//         coeff3.real(1.875);
+//         offset.real(-1.0);
+// 		coeff_norm.real(0.25);
+
+//         // Normalise the MACD signals so that most of the data is in range [-1, 1]
+//         scheme.multByConstAndEqual(mt, coeff_norm, logp);
+//         scheme.reScaleByAndEqual(mt, logp);
+//         scheme.multByConstAndEqual(mt_1, coeff_norm, logp);
+//         scheme.reScaleByAndEqual(mt_1, logp);
+
+//         // Calculate m(t-1)-m(t) and m(t-1)*m(t)
+//         // m(t-1)*m(t) is denoted as x in the following steps
+//         Ciphertext diff_res;
+//         scheme.sub(diff_res, mt_1, mt);
+//         Ciphertext x;
+//         scheme.mult(x, mt_1, mt);
+//         scheme.reScaleByAndEqual(x, logp);
+
+//         // Calculate x^2
+//         Ciphertext x2_encrypted;
+//         scheme.square(x2_encrypted, x);
+//         scheme.reScaleByAndEqual(x2_encrypted, logp);
+
+//         // Calculate x^3
+//         Ciphertext x3_encrypted;
+//         scheme.modDownToAndEqual(x, x2_encrypted.logq);
+//         scheme.mult(x3_encrypted, x, x2_encrypted);
+//         scheme.reScaleByAndEqual(x3_encrypted, logp);
+
+//         // Calculate x^5
+//         Ciphertext x5_encrypted;
+//         scheme.modDownToAndEqual(x2_encrypted, x3_encrypted.logq);
+//         scheme.mult(x5_encrypted, x2_encrypted, x3_encrypted);
+//         scheme.reScaleByAndEqual(x5_encrypted, logp);
+
+//         // Calculate 0.375*x^5
+//         scheme.multByConstAndEqual(x5_encrypted, coeff1, logp);
+//         scheme.reScaleByAndEqual(x5_encrypted, logp);
+
+//         // Calculate -1.25*x^3
+//         scheme.multByConstAndEqual(x3_encrypted, coeff2, logp);
+//         scheme.reScaleByAndEqual(x3_encrypted, logp);
+
+//         // Calculate 1.875*x
+//         scheme.multByConstAndEqual(x, coeff3, logp);
+//         scheme.reScaleByAndEqual(x, logp);
+
+//         // Calculate 0.375*x^5-1.25*x^3+1.875*x-1
+//         Ciphertext sign_encrypted;
+//         scheme.modDownToAndEqual(x3_encrypted, x5_encrypted.logq);
+//         scheme.add(sign_encrypted, x5_encrypted, x3_encrypted);
+//         scheme.modDownToAndEqual(x, sign_encrypted.logq);
+//         scheme.addAndEqual(sign_encrypted, x);
+//         scheme.addConstAndEqual(sign_encrypted, offset, logp);
+
+//         // Calculate (m(t-1)-m(t))*(f(x)-1)
+//         Ciphertext result_encrypted;
+//         scheme.modDownToAndEqual(diff_res, sign_encrypted.logq);
+//         scheme.mult(result_encrypted, sign_encrypted, diff_res);
+//         scheme.reScaleByAndEqual(result_encrypted, logp);
+
+//         decisions.push_back(result_encrypted);
+//     }
+//     return decisions;
+// }
+
+// ***************************************************************************************************
+// New approximation approach
+// ***************************************************************************************************
 // Return the trading decisions based on the MACD signals
 // Denote MACD signals as m(t) where t is the time and sign function as sign()
 // Decision(t) = (m(t-1)-m(t))*(sign(m(t-1)*m(t))-1)
@@ -144,22 +240,26 @@ inline vector<Ciphertext> wma(vector<Ciphertext>& data, long m, Scheme &scheme, 
 // Decision(t) > 0 means "Buy"
 // Decision(t) < 0 means "Sell"
 // We use a polynomial approximation of tanh to approximate sign function
-// The approximation of sign function: f(x) = 0.375*x^5 - 1.25*x^3 + 1.875*x where x = m(t)*m(t-1)
-inline vector<Ciphertext> decision(vector<Ciphertext>& macd, Scheme &scheme, long logq, long logp) {
+// The approximation of sign function: f(x) = 0.00002635*x^8-0.0003472*x^6+0.0052083*x^4-0.2*x^2+0.25*x-0.061
+// where x = m(t)*m(t-1)
+inline vector<Ciphertext> decision(vector<Ciphertext>& macd, double norm, Scheme &scheme, long logq, long logp) {
     vector<Ciphertext> decisions;
+
+    // Set up coefficients
+    complex<double> coeff1, coeff2, coeff3, coeff4, coeff5, coeff6, coeff_norm;
+    coeff1.real(0.00002635);
+    coeff2.real(-0.0003472);
+    coeff3.real(0.0052083);
+    coeff4.real(-0.2);
+	coeff5.real(0.25);
+    coeff6.real(-0.061);
+    coeff_norm.real(norm);
+
     for (int i = 1; i < macd.size(); i++) {
 
         // Store the latest two MACD signals m(t) and m(t-1)
         Ciphertext mt = macd[i];
         Ciphertext mt_1 = macd[i-1];
-
-        // Set up coefficients
-        complex<double> coeff1, coeff2, coeff3, offset, coeff_norm;
-        coeff1.real(0.375);
-        coeff2.real(-1.25);
-        coeff3.real(1.875);
-        offset.real(-1.0);
-		coeff_norm.real(0.25);
 
         // Normalise the MACD signals so that most of the data is in range [-1, 1]
         scheme.multByConstAndEqual(mt, coeff_norm, logp);
@@ -171,46 +271,61 @@ inline vector<Ciphertext> decision(vector<Ciphertext>& macd, Scheme &scheme, lon
         // m(t-1)*m(t) is denoted as x in the following steps
         Ciphertext diff_res;
         scheme.sub(diff_res, mt_1, mt);
-        Ciphertext mult_res;
-        scheme.mult(mult_res, mt_1, mt);
-        scheme.reScaleByAndEqual(mult_res, logp);
+        Ciphertext x_encrypted;
+        scheme.mult(x_encrypted, mt_1, mt);
+        scheme.reScaleByAndEqual(x_encrypted, logp);
 
         // Calculate x^2
         Ciphertext x2_encrypted;
-        scheme.square(x2_encrypted, mult_res);
+        scheme.square(x2_encrypted, x_encrypted);
         scheme.reScaleByAndEqual(x2_encrypted, logp);
 
-        // Calculate x^3
-        Ciphertext x3_encrypted;
-        scheme.modDownToAndEqual(mult_res, x2_encrypted.logq);
-        scheme.mult(x3_encrypted, mult_res, x2_encrypted);
-        scheme.reScaleByAndEqual(x3_encrypted, logp);
+        // Calculate x^4
+        Ciphertext x4_encrypted;
+        scheme.square(x4_encrypted, x2_encrypted);
+        scheme.reScaleByAndEqual(x4_encrypted, logp);
 
-        // Calculate x^5
-        Ciphertext x5_encrypted;
-        scheme.modDownToAndEqual(x2_encrypted, x3_encrypted.logq);
-        scheme.mult(x5_encrypted, x2_encrypted, x3_encrypted);
-        scheme.reScaleByAndEqual(x5_encrypted, logp);
+        // Calculate x^6
+        Ciphertext x6_encrypted;
+        scheme.modDownToAndEqual(x2_encrypted, x4_encrypted.logq);
+        scheme.mult(x6_encrypted, x4_encrypted, x2_encrypted);
+        scheme.reScaleByAndEqual(x6_encrypted, logp);
 
-        // Calculate 0.375*x^5
-        scheme.multByConstAndEqual(x5_encrypted, coeff1, logp);
-        scheme.reScaleByAndEqual(x5_encrypted, logp);
+        // Calculate x^8
+        Ciphertext x8_encrypted;
+        scheme.square(x8_encrypted, x4_encrypted);
+        scheme.reScaleByAndEqual(x8_encrypted, logp);
 
-        // Calculate -1.25*x^3
-        scheme.multByConstAndEqual(x3_encrypted, coeff2, logp);
-        scheme.reScaleByAndEqual(x3_encrypted, logp);
+        // Calculate 0.00002635*x^8
+        scheme.multByConstAndEqual(x8_encrypted, coeff1, logp);
+        scheme.reScaleByAndEqual(x8_encrypted, logp);
 
-        // Calculate 1.875*x
-        scheme.multByConstAndEqual(mult_res, coeff3, logp);
-        scheme.reScaleByAndEqual(mult_res, logp);
+        // Calculate -0.0003472*x^6
+        scheme.multByConstAndEqual(x6_encrypted, coeff2, logp);
+        scheme.reScaleByAndEqual(x6_encrypted, logp);
 
-        // Calculate 0.375*x^5-1.25*x^3+1.875*x-1
+        // Calculate 0.0052083*x^4
+        scheme.multByConstAndEqual(x4_encrypted, coeff3, logp);
+        scheme.reScaleByAndEqual(x4_encrypted, logp);
+
+        // Calculate -0.2*x^2
+        scheme.multByConstAndEqual(x2_encrypted, coeff4, logp);
+        scheme.reScaleByAndEqual(x2_encrypted, logp);
+
+        // Calculate 0.25*x
+        scheme.multByConstAndEqual(x_encrypted, coeff5, logp);
+        scheme.reScaleByAndEqual(x_encrypted, logp);
+
+        // Calculate 0.00002635*x^8-0.0003472*x^6+0.0052083*x^4-0.2*x^2+0.25*x-0.061 
         Ciphertext sign_encrypted;
-        scheme.modDownToAndEqual(x3_encrypted, x5_encrypted.logq);
-        scheme.add(sign_encrypted, x5_encrypted, x3_encrypted);
-        scheme.modDownToAndEqual(mult_res, sign_encrypted.logq);
-        scheme.addAndEqual(sign_encrypted, mult_res);
-        scheme.addConstAndEqual(sign_encrypted, offset, logp);
+        scheme.add(sign_encrypted, x8_encrypted, x6_encrypted);
+        scheme.modDownToAndEqual(x4_encrypted, sign_encrypted.logq);
+        scheme.addAndEqual(sign_encrypted, x4_encrypted);
+        scheme.modDownToAndEqual(x2_encrypted, sign_encrypted.logq);
+        scheme.addAndEqual(sign_encrypted, x2_encrypted);
+        scheme.modDownToAndEqual(x_encrypted, sign_encrypted.logq);
+        scheme.addAndEqual(sign_encrypted, x_encrypted);
+        scheme.addConstAndEqual(sign_encrypted, coeff6, logp);
 
         // Calculate (m(t-1)-m(t))*(f(x)-1)
         Ciphertext result_encrypted;
@@ -222,6 +337,7 @@ inline vector<Ciphertext> decision(vector<Ciphertext>& macd, Scheme &scheme, lon
     }
     return decisions;
 }
+
 
 // ***************************************************************************************************
 // Data input/output functions
@@ -248,6 +364,7 @@ inline Ciphertext getSample(long time, long logq, long logp, long logn, Scheme& 
     }
     Ciphertext sample_encrypted;
     scheme.encrypt(sample_encrypted, sample, n, logp, logq);
+    delete[] sample;
     return sample_encrypted;
 }
 
@@ -263,6 +380,7 @@ inline vector<double> decryptVec(vector<Ciphertext>& ct, Scheme& scheme, SecretK
         complex<double>* val;
         val = scheme.decrypt(secretKey, ct[i]);
         res.push_back(real(val[0]));
+        delete val;
     }
     return res;
 }
@@ -281,7 +399,7 @@ int main() {
 
 	long logq = 600; // Ciphertext polynomial modulus
 	long logp = 30; // Scale
-	long logn = 10; // n = number of slots in a Ciphertext
+	long logn = 5; // n = number of slots in a Ciphertext
 	long time_max = 200; // Sample data size
 
 	SetNumThreads(8);
@@ -289,8 +407,8 @@ int main() {
 	SecretKey secretKey(ring);
 	Scheme scheme(secretKey, ring);
 
-	cout << "Data Import Begins" << endl;
-	cout << "\n";
+    cout << "Data Import Begins" << endl;
+    auto import_start = high_resolution_clock::now();
 
     vector<Ciphertext> prices_encrypted;
     for (int i = 0; i < time_max; i++) {
@@ -298,11 +416,15 @@ int main() {
         assembleSample(sample, prices_encrypted);   
     }
 
-	cout << "Data Import Finished" << endl;
+    auto import_stop = high_resolution_clock::now();
+    auto import_duration = duration_cast<seconds>(import_stop - import_start); 
+
+    cout << "Data Import Finished" << endl;
+    cout << "Data Import Duration:  " << import_duration.count() << " seconds" << endl;
 	cout << "\n";
 
 	cout << "MACD Analysis Begins" << endl;
-	cout << "\n";
+    auto macd_start = high_resolution_clock::now();
 
 	vector<Ciphertext> wma12_encrypted = wma(prices_encrypted, 12, scheme, logq, logp, logn);
 	vector<Ciphertext> wma12_encrypted_sliced = slice(wma12_encrypted, 14, wma12_encrypted.size());
@@ -328,19 +450,25 @@ int main() {
         macd_encrypted.push_back(tmp_macd);
     }
 
+    auto macd_stop = high_resolution_clock::now();
+    auto macd_duration = duration_cast<seconds>(macd_stop - macd_start); 
 	cout << "MACD Analysis Finished" << endl;
+    cout << "MACD Analysis Duration:  " << macd_duration.count() << " seconds" << endl;
 	cout << "\n";
 
     cout << "Decision Analysis Begins" << endl;
-	cout << "\n";
+    auto decision_start = high_resolution_clock::now();
 
-	vector<Ciphertext> decisions_encrypted = decision(macd_encrypted, scheme, logq, logp);
+	vector<Ciphertext> decisions_encrypted = decision(macd_encrypted, 0.5, scheme, logq, logp);
 
+    auto decision_stop = high_resolution_clock::now();
+    auto decision_duration = duration_cast<seconds>(decision_stop - decision_start);
     cout << "Decision Analysis Finished" << endl;
+    cout << "Decision Analysis Duration:  " << decision_duration.count() << " seconds" << endl;
     cout << "\n";
 
     cout << "Data Export Begins" << endl;
-	cout << "\n";
+    auto export_start = high_resolution_clock::now();
     
     vector<double> wma12 = decryptVec(wma12_encrypted_sliced, scheme, secretKey);
     vector<double> wma26 = decryptVec(wma26_encrypted, scheme, secretKey);
@@ -356,7 +484,10 @@ int main() {
     exportData(macd, "../data/macd_heaan.csv");
     exportData(decisions, "../data/decisions_heaan.csv");
 
+    auto export_stop = high_resolution_clock::now();
+    auto export_duration = duration_cast<seconds>(export_stop - export_start);
 	cout << "Data Export Finished" << endl;
+    cout << "Data Export Duration:  " << export_duration.count() << " seconds" << endl;
     cout << "\n";
 
 	return 0;

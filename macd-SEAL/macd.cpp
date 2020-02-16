@@ -22,10 +22,12 @@
 #include <assert.h>
 #include <sstream>
 #include <stdlib.h>
+#include <chrono>
 #include "seal/seal.h"
 
 using namespace std;
 using namespace seal;
+using namespace std::chrono;
 
 //********************************************************************************
 // SEAL helper functions
@@ -259,6 +261,135 @@ inline vector<Ciphertext> wma(vector<Ciphertext>& data, int n, int level, CKKSEn
     return wma;
 }
 
+// ***************************************************************************************************
+// Old approximation approach
+// ***************************************************************************************************
+// // Return the trading decisions based on the MACD signals
+// // Denote MACD signals as m(t) where t is the time and sign function as sign()
+// // Decision(t) = (m(t-1)-m(t))*(sign(m(t-1)*m(t))-1)
+// // sign(m(t-1)*m(t))-1 indicates the turning point, where MACD signals cross the X axis
+// // m(t-1)-m(t) indicates the trend
+// // Decision(t) = 0 means "Do nothing" or "Hold"
+// // Decision(t) > 0 means "Buy"
+// // Decision(t) < 0 means "Sell"
+// // We use a polynomial approximation of tanh to approximate sign function
+// // The approximation of sign function: f(x) = 0.375*x^5 - 1.25*x^3 + 1.875*x where x = m(t)*m(t-1)
+// inline vector<Ciphertext> decision(vector<Ciphertext> macd_encrypted, int level, CKKSEncoder &encoder, 
+//         Encryptor &encryptor, Evaluator &evaluator, RelinKeys &relin_keys, double scale, parms_id_type *parms_ids) {
+    
+//     vector<Ciphertext> decisions_encrypted;
+//     for (int i = 1; i < macd_encrypted.size(); i++) {
+
+//         // Store the latest two MACD signals m(t) and m(t-1)
+//         Ciphertext mt = macd_encrypted[i];
+//         Ciphertext mt_1 = macd_encrypted[i-1];
+
+//         // Set up coefficients
+//         Plaintext coeff1_plain, coeff2_plain, coeff3_plain, offset_plain, coeff_norm_plain;
+//         Ciphertext offset_encrypted;
+//         encoder.encode(0.375, scale, coeff1_plain);
+//         encoder.encode((-1.25), scale, coeff2_plain);
+//         encoder.encode(1.875, scale, coeff3_plain);
+//         encoder.encode(-1.0, scale, offset_plain);
+//         encryptor.encrypt(offset_plain, offset_encrypted);
+//         encoder.encode(0.25, scale, coeff_norm_plain);
+//         evaluator.mod_switch_to_inplace(coeff_norm_plain, parms_ids[level]);
+
+//         // Normalise the MACD signals so that most of the data is in range [-1, 1]
+//         evaluator.multiply_plain_inplace(mt, coeff_norm_plain);
+//         evaluator.rescale_to_next_inplace(mt);
+//         mt.scale() = scale;
+//         evaluator.multiply_plain_inplace(mt_1, coeff_norm_plain);
+//         evaluator.rescale_to_next_inplace(mt_1);
+//         mt_1.scale() = scale;
+
+//         // Calculate m(t-1)-m(t) and m(t-1)*m(t)
+//         // m(t-1)*m(t) is denoted as x in the following steps
+//         Ciphertext recent_diff;
+//         evaluator.sub(mt_1, mt, recent_diff);
+//         Ciphertext x;
+//         evaluator.multiply(mt_1, mt, x);
+//         evaluator.relinearize_inplace(x, relin_keys);
+//         evaluator.rescale_to_next_inplace(x);
+//         x.scale() = scale;
+
+//         // Calculate x^2, which is at level 5
+//         Ciphertext x2_encrypted;
+//         evaluator.square(x, x2_encrypted);
+//         evaluator.relinearize_inplace(x2_encrypted, relin_keys);
+//         evaluator.rescale_to_next_inplace(x2_encrypted);
+//         x2_encrypted.scale() = scale;
+
+//         // Calculate x^3, which is at level 6
+//         // x^2 is at level 5, switch mod to ensure parameters id match
+//         Ciphertext x3_encrypted;
+//         evaluator.mod_switch_to_inplace(x, parms_ids[level+3]);
+//         evaluator.multiply(x, x2_encrypted, x3_encrypted);
+//         evaluator.relinearize_inplace(x3_encrypted, relin_keys);
+//         evaluator.rescale_to_next_inplace(x3_encrypted);
+//         x3_encrypted.scale() = scale;
+
+//         // Calculate x^5, which is at level 7
+//         // x^3 is at level 6, switch mod to ensure parameters id match
+//         Ciphertext x5_encrypted;        
+//         evaluator.mod_switch_to_inplace(x2_encrypted, parms_ids[level+4]);
+//         evaluator.multiply(x2_encrypted, x3_encrypted, x5_encrypted);
+//         evaluator.relinearize_inplace(x5_encrypted, relin_keys);
+//         evaluator.rescale_to_next_inplace(x5_encrypted);
+//         x5_encrypted.scale() = scale;
+
+//         // Calculate 0.375*x^5, which is at level 8
+//         // x^5 is at level 7, switch mod to ensure parameters id match
+//         evaluator.mod_switch_to_inplace(coeff1_plain, parms_ids[level+5]);
+//         evaluator.multiply_plain_inplace(x5_encrypted, coeff1_plain);
+//         evaluator.rescale_to_next_inplace(x5_encrypted);
+//         x5_encrypted.scale() = scale;
+
+//         // Calculate -1.25*x^3, which is at level 7
+//         // x^3 is at level 6, switch mod to ensure parameters id match
+//         evaluator.mod_switch_to_inplace(coeff2_plain, parms_ids[level+4]);
+//         evaluator.multiply_plain_inplace(x3_encrypted, coeff2_plain);
+//         evaluator.rescale_to_next_inplace(x3_encrypted);
+//         x3_encrypted.scale() = scale;
+
+//         // Calculate 1.875*x
+//         // Switch mod to ensure parameters id match
+//         // Note that previously we haved switched x's level to 5
+//         evaluator.mod_switch_to_inplace(coeff3_plain, parms_ids[level+3]);
+//         evaluator.multiply_plain_inplace(x, coeff3_plain);
+//         evaluator.rescale_to_next_inplace(x);
+//         x.scale() = scale;
+
+//         // To do the addition, we have to ensure all the terms have same parms_id and scale
+//         evaluator.mod_switch_to_inplace(x3_encrypted, parms_ids[level+6]);
+//         evaluator.mod_switch_to_inplace(x, parms_ids[level+6]);
+//         evaluator.mod_switch_to_inplace(offset_encrypted, parms_ids[level+6]);
+
+//         // Calculate 0.375*x^5-1.25*x^3+1.875*x-1
+//         Ciphertext sign_encrypted;
+//         evaluator.add(x5_encrypted, x3_encrypted, sign_encrypted);
+//         evaluator.add_inplace(sign_encrypted, x);
+//         evaluator.add_inplace(sign_encrypted, offset_encrypted);
+
+//         // Calculate (m(t-1)-m(t))*(f(x)-1)
+//         Ciphertext result_encrypted;
+//         evaluator.mod_switch_to_inplace(recent_diff, parms_ids[level+6]);
+//         sign_encrypted.scale() = scale;
+//         recent_diff.scale() = scale;
+//         result_encrypted.scale() = scale;
+//         evaluator.multiply(sign_encrypted, recent_diff, result_encrypted);
+//         evaluator.relinearize_inplace(result_encrypted, relin_keys);
+//         evaluator.rescale_to_next_inplace(result_encrypted);
+//         result_encrypted.scale() = scale;
+
+//         decisions_encrypted.push_back(result_encrypted);
+//     }
+//     return decisions_encrypted;
+// }
+
+// ***************************************************************************************************
+// New approximation approach
+// ***************************************************************************************************
 // Return the trading decisions based on the MACD signals
 // Denote MACD signals as m(t) where t is the time and sign function as sign()
 // Decision(t) = (m(t-1)-m(t))*(sign(m(t-1)*m(t))-1)
@@ -268,29 +399,31 @@ inline vector<Ciphertext> wma(vector<Ciphertext>& data, int n, int level, CKKSEn
 // Decision(t) > 0 means "Buy"
 // Decision(t) < 0 means "Sell"
 // We use a polynomial approximation of tanh to approximate sign function
-// The approximation of sign function: f(x) = 0.375*x^5 - 1.25*x^3 + 1.875*x where x = m(t)*m(t-1)
-inline vector<Ciphertext> decision(vector<Ciphertext> macd_encrypted, int level, CKKSEncoder &encoder, 
+// The approximation of sign function: f(x) = 0.00002635*x^8-0.0003472*x^6+0.0052083*x^4-0.2*x^2+0.25*x-0.061 
+// where x = m(t)*m(t-1)
+inline vector<Ciphertext> decision(vector<Ciphertext> macd_encrypted, int level, double norm, CKKSEncoder &encoder, 
         Encryptor &encryptor, Evaluator &evaluator, RelinKeys &relin_keys, double scale, parms_id_type *parms_ids) {
     
+     // Set up coefficients
+    Plaintext coeff1_plain, coeff2_plain, coeff3_plain, coeff4_plain, coeff5_plain, coeff6_plain, coeff_norm_plain;
+    encoder.encode(0.00002635, scale, coeff1_plain);
+    encoder.encode((-0.0003472), scale, coeff2_plain);
+    encoder.encode(0.0052083, scale, coeff3_plain);
+    encoder.encode((-0.2), scale, coeff4_plain);
+    encoder.encode(0.25, scale, coeff5_plain);
+    encoder.encode((-0.061), scale, coeff6_plain);
+    encoder.encode(norm, scale, coeff_norm_plain);
+
     vector<Ciphertext> decisions_encrypted;
+    
     for (int i = 1; i < macd_encrypted.size(); i++) {
 
         // Store the latest two MACD signals m(t) and m(t-1)
         Ciphertext mt = macd_encrypted[i];
         Ciphertext mt_1 = macd_encrypted[i-1];
 
-        // Set up coefficients
-        Plaintext coeff1_plain, coeff2_plain, coeff3_plain, offset_plain, coeff_norm_plain;
-        Ciphertext offset_encrypted;
-        encoder.encode(0.375, scale, coeff1_plain);
-        encoder.encode((-1.25), scale, coeff2_plain);
-        encoder.encode(1.875, scale, coeff3_plain);
-        encoder.encode(-1.0, scale, offset_plain);
-        encryptor.encrypt(offset_plain, offset_encrypted);
-        encoder.encode(0.25, scale, coeff_norm_plain);
-        evaluator.mod_switch_to_inplace(coeff_norm_plain, parms_ids[level]);
-
         // Normalise the MACD signals so that most of the data is in range [-1, 1]
+        evaluator.mod_switch_to_inplace(coeff_norm_plain, parms_ids[level]);
         evaluator.multiply_plain_inplace(mt, coeff_norm_plain);
         evaluator.rescale_to_next_inplace(mt);
         mt.scale() = scale;
@@ -299,72 +432,95 @@ inline vector<Ciphertext> decision(vector<Ciphertext> macd_encrypted, int level,
         mt_1.scale() = scale;
 
         // Calculate m(t-1)-m(t) and m(t-1)*m(t)
-        // m(t-1)*m(t) is denoted as x in the following steps
+        // m(t-1)*m(t) is denoted as x in the following steps, which is at level 4
         Ciphertext recent_diff;
         evaluator.sub(mt_1, mt, recent_diff);
-        Ciphertext recent_mult;
-        evaluator.multiply(mt_1, mt, recent_mult);
-        evaluator.relinearize_inplace(recent_mult, relin_keys);
-        evaluator.rescale_to_next_inplace(recent_mult);
-        recent_mult.scale() = scale;
+        Ciphertext x_encrypted;
+        evaluator.multiply(mt_1, mt, x_encrypted);
+        evaluator.relinearize_inplace(x_encrypted, relin_keys);
+        evaluator.rescale_to_next_inplace(x_encrypted);
+        x_encrypted.scale() = scale;
 
         // Calculate x^2, which is at level 5
         Ciphertext x2_encrypted;
-        evaluator.square(recent_mult, x2_encrypted);
+        evaluator.square(x_encrypted, x2_encrypted);
         evaluator.relinearize_inplace(x2_encrypted, relin_keys);
         evaluator.rescale_to_next_inplace(x2_encrypted);
         x2_encrypted.scale() = scale;
 
-        // Calculate x^3, which is at level 6
+        // Calculate x^4, which is at level 6
         // x^2 is at level 5, switch mod to ensure parameters id match
-        Ciphertext x3_encrypted;
-        evaluator.mod_switch_to_inplace(recent_mult, parms_ids[level+3]);
-        evaluator.multiply(recent_mult, x2_encrypted, x3_encrypted);
-        evaluator.relinearize_inplace(x3_encrypted, relin_keys);
-        evaluator.rescale_to_next_inplace(x3_encrypted);
-        x3_encrypted.scale() = scale;
+        Ciphertext x4_encrypted;
+        evaluator.square(x2_encrypted, x4_encrypted);
+        evaluator.relinearize_inplace(x4_encrypted, relin_keys);
+        evaluator.rescale_to_next_inplace(x4_encrypted);
+        x4_encrypted.scale() = scale;
 
-        // Calculate x^5, which is at level 7
-        // x^3 is at level 6, switch mod to ensure parameters id match
-        Ciphertext x5_encrypted;        
+        // Calculate x^6, which is at level 7
+        // x^4 is at level 6, switch mod to ensure parameters id match
+        Ciphertext x6_encrypted;
         evaluator.mod_switch_to_inplace(x2_encrypted, parms_ids[level+4]);
-        evaluator.multiply(x2_encrypted, x3_encrypted, x5_encrypted);
-        evaluator.relinearize_inplace(x5_encrypted, relin_keys);
-        evaluator.rescale_to_next_inplace(x5_encrypted);
-        x5_encrypted.scale() = scale;
+        evaluator.multiply(x2_encrypted, x4_encrypted, x6_encrypted);
+        evaluator.relinearize_inplace(x6_encrypted, relin_keys);
+        evaluator.rescale_to_next_inplace(x6_encrypted);
+        x6_encrypted.scale() = scale;
 
-        // Calculate 0.375*x^5, which is at level 8
-        // x^5 is at level 7, switch mod to ensure parameters id match
+        // Calculate x^8, which is at level 7
+        Ciphertext x8_encrypted;        
+        evaluator.multiply(x4_encrypted, x4_encrypted, x8_encrypted);
+        evaluator.relinearize_inplace(x8_encrypted, relin_keys);
+        evaluator.rescale_to_next_inplace(x8_encrypted);
+        x8_encrypted.scale() = scale;
+
+        // Calculate 0.00002635*x^8, which is at level 8
+        // x^8 is at level 7, switch mod to ensure parameters id match
         evaluator.mod_switch_to_inplace(coeff1_plain, parms_ids[level+5]);
-        evaluator.multiply_plain_inplace(x5_encrypted, coeff1_plain);
-        evaluator.rescale_to_next_inplace(x5_encrypted);
-        x5_encrypted.scale() = scale;
+        evaluator.multiply_plain_inplace(x8_encrypted, coeff1_plain);
+        evaluator.rescale_to_next_inplace(x8_encrypted);
+        x8_encrypted.scale() = scale;
 
-        // Calculate -1.25*x^3, which is at level 7
-        // x^3 is at level 6, switch mod to ensure parameters id match
-        evaluator.mod_switch_to_inplace(coeff2_plain, parms_ids[level+4]);
-        evaluator.multiply_plain_inplace(x3_encrypted, coeff2_plain);
-        evaluator.rescale_to_next_inplace(x3_encrypted);
-        x3_encrypted.scale() = scale;
+        // Calculate -0.0003472*x^6, which is at level 8
+        // x^6 is at level 7, switch mod to ensure parameters id match
+        evaluator.mod_switch_to_inplace(coeff2_plain, parms_ids[level+5]);
+        evaluator.multiply_plain_inplace(x6_encrypted, coeff2_plain);
+        evaluator.rescale_to_next_inplace(x6_encrypted);
+        x6_encrypted.scale() = scale;
 
-        // Calculate 1.875*x
+        // Calculate 0.0052083*x^4, which is at level 7
+        // x^4 is at level 6, switch mod to ensure parameters id match
+        evaluator.mod_switch_to_inplace(coeff3_plain, parms_ids[level+4]);
+        evaluator.multiply_plain_inplace(x4_encrypted, coeff3_plain);
+        evaluator.rescale_to_next_inplace(x4_encrypted);
+        x4_encrypted.scale() = scale;
+
+        // Calculate -0.2*x^2, which is at level 7
+        // Note that previously we haved switched x^2's level to 6
+        evaluator.mod_switch_to_inplace(coeff4_plain, parms_ids[level+4]);
+        evaluator.multiply_plain_inplace(x2_encrypted, coeff4_plain);
+        evaluator.rescale_to_next_inplace(x2_encrypted);
+        x2_encrypted.scale() = scale;
+
+        // Calculate 0.25*x
         // Switch mod to ensure parameters id match
-        // Note that previously we haved switched recent_mult's level to 5
-        evaluator.mod_switch_to_inplace(coeff3_plain, parms_ids[level+3]);
-        evaluator.multiply_plain_inplace(recent_mult, coeff3_plain);
-        evaluator.rescale_to_next_inplace(recent_mult);
-        recent_mult.scale() = scale;
+        evaluator.mod_switch_to_inplace(coeff5_plain, parms_ids[level+2]);
+        evaluator.multiply_plain_inplace(x_encrypted, coeff5_plain);
+        evaluator.rescale_to_next_inplace(x_encrypted);
+        x_encrypted.scale() = scale;
 
         // To do the addition, we have to ensure all the terms have same parms_id and scale
-        evaluator.mod_switch_to_inplace(x3_encrypted, parms_ids[level+6]);
-        evaluator.mod_switch_to_inplace(recent_mult, parms_ids[level+6]);
-        evaluator.mod_switch_to_inplace(offset_encrypted, parms_ids[level+6]);
+        evaluator.mod_switch_to_inplace(x4_encrypted, parms_ids[level+6]);
+        evaluator.mod_switch_to_inplace(x2_encrypted, parms_ids[level+6]);
+        evaluator.mod_switch_to_inplace(x_encrypted, parms_ids[level+6]);
+        // evaluator.mod_switch_to_inplace(coeff6_plain, parms_ids[level+6]);
 
-        // Calculate 0.375*x^5-1.25*x^3+1.875*x-1
+        // Calculate 0.00002635*x^8-0.0003472*x^6+0.0052083*x^4-0.2*x^2+0.25*x-0.061
         Ciphertext sign_encrypted;
-        evaluator.add(x5_encrypted, x3_encrypted, sign_encrypted);
-        evaluator.add_inplace(sign_encrypted, recent_mult);
-        evaluator.add_inplace(sign_encrypted, offset_encrypted);
+        evaluator.add(x8_encrypted, x6_encrypted, sign_encrypted);
+        evaluator.add_inplace(sign_encrypted, x4_encrypted);
+        evaluator.add_inplace(sign_encrypted, x2_encrypted);
+        evaluator.add_inplace(sign_encrypted, x_encrypted);
+        evaluator.mod_switch_to_inplace(coeff6_plain, parms_ids[level+6]);
+        evaluator.add_plain_inplace(sign_encrypted, coeff6_plain);
 
         // Calculate (m(t-1)-m(t))*(f(x)-1)
         Ciphertext result_encrypted;
@@ -432,9 +588,9 @@ int main()
     EncryptionParameters parms(scheme_type::CKKS);
     size_t poly_modulus_degree = 16384;
     parms.set_poly_modulus_degree(poly_modulus_degree);
-    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, { 40, 30, 30, 30, 30, 30, 30, 30, 30, 30, 40 }));
+    parms.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree, { 40, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 40 }));
     double scale = pow(2.0, 30);
-    int max_level = 11;
+    int max_level = 12;
 
     // Set up Context
     auto context = SEALContext::Create(parms);
@@ -470,7 +626,7 @@ int main()
     int time_max = 200;
 
     cout << "Data Import Begins" << endl;
-	cout << "\n";
+    auto import_start = high_resolution_clock::now();
 
     vector<Ciphertext> prices_encrypted;
     for (int i = 0; i < time_max; i++) {
@@ -478,11 +634,16 @@ int main()
         assembleSample(sample, prices_encrypted);
     }
 
+    auto import_stop = high_resolution_clock::now();
+    auto import_duration = duration_cast<seconds>(import_stop - import_start); 
     cout << "Data Import Finished" << endl;
+    cout << "Data Import Duration:  " << import_duration.count() << " seconds" << endl;
 	cout << "\n";
 
+
+
 	cout << "MACD Analysis Begins" << endl;
-	cout << "\n";
+    auto macd_start = high_resolution_clock::now();
 
     // level 0: prices
     // level 1: wma12, wma26, wma_diff
@@ -512,29 +673,35 @@ int main()
         macd_encrypted.push_back(tmp_macd);
     }
 
+    auto macd_stop = high_resolution_clock::now();
+    auto macd_duration = duration_cast<seconds>(macd_stop - macd_start); 
 	cout << "MACD Analysis Finished" << endl;
+    cout << "MACD Analysis Duration:  " << macd_duration.count() << " seconds" << endl;
 	cout << "\n";
 
     cout << "Decision Analysis Begins" << endl;
-	cout << "\n";
+    auto decision_start = high_resolution_clock::now();
 
     // level 2: m(t-1), m(t), m(t-1)-m(t)
-    // level 3: 0.25*m(t), 0.25*m(t-1) // To normalize MACD signal
+    // level 3: norm*m(t), norm*m(t-1) // To normalize MACD signal
     // level 4: x = m(t-1)*m(t) // res_mult
     // level 5: x^2
-    // level 6: x^3 = x^2*x
-    // level 7: x^5 = x^3*x^2
-    // level 8: f(x) = 0.375*x^5 - 1.25*x^3 + 1.875*x -1
+    // level 6: x^4
+    // level 7: x^8, x^6
+    // level 8: f(x)
     // level 9: decision = (m(t)-m(t-1))*(f(x)-1)
 
-    vector<Ciphertext> decisions_encrypted = decision(macd_encrypted, 2, encoder, encryptor, 
+    vector<Ciphertext> decisions_encrypted = decision(macd_encrypted, 2, 0.5, encoder, encryptor, 
         evaluator, relin_keys, scale, parms_ids);
 
+    auto decision_stop = high_resolution_clock::now();
+    auto decision_duration = duration_cast<seconds>(decision_stop - decision_start);
     cout << "Decision Analysis Finished" << endl;
+    cout << "Decision Analysis Duration:  " << decision_duration.count() << " seconds" << endl;
     cout << "\n";
 
     cout << "Data Export Begins" << endl;
-	cout << "\n";
+    auto export_start = high_resolution_clock::now();
     
     vector<double> wma12 = decryptVec(wma12_encrypted_sliced, decryptor, encoder);
     vector<double> wma26 = decryptVec(wma26_encrypted, decryptor, encoder);
@@ -550,7 +717,10 @@ int main()
     exportData(macd, "data/macd_seal.csv");
     exportData(decisions, "data/decisions_seal.csv");
 
+    auto export_stop = high_resolution_clock::now();
+    auto export_duration = duration_cast<seconds>(export_stop - export_start);
 	cout << "Data Export Finished" << endl;
+    cout << "Data Export Duration:  " << export_duration.count() << " seconds" << endl;
     cout << "\n";
 
     return 0;
