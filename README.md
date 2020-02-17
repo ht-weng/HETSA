@@ -18,9 +18,10 @@ Haotian Weng, Hanna Suominen, Artem Lenskiy
 # Applications
 To demonstrate the capabilities of the proposed framework we present a number of use cases.
 
-## 1. Moving Average Convergence Divergence with SEAL
+## 1. Moving Average Convergence Divergence
 
-In this application, we demonstrate an analogous to Numer.ai system implemented with the HETSA library. In our scenario a set of traders receive encrypted price quotes, analyse the prices in real time, and draw a trading decision (if any). The trading decision in encrypted form is sent back to the server where it is decrypted and facilitated.
+
+Algorithmic trading has proliferated the area of quantitative finance for already a number of decades. The decisions are made in an automatic manner using the data provided by brokerage firms and exchanges. There is an emerging intermediate layer of financial players that is placed in between a broker and algorithmic traders. The role of these players is to aggregate market decisions from the algorithmic traders and send a final market order to a broker. In return the quants receive incentives proportional to the correctness of their predictions. In such a setup, the intermediate player - an aggregator does not provide the market data in plaintext but encrypts it. Encrypting market data prevents quants from trading on their own, as well as keeps expensive financial data private. In this use case scenarion we implement a MACD-based  trend-following strategy using the methods of homomorphic encryption. 
 
 ## 2. Diabetes diagnosis on encrypted heart rate variability
 
