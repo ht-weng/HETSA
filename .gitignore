@@ -1,6 +1,7 @@
 .DS_Store
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+.vscode
 macd-SEAL/macd
 macd-SEAL/CMakeFiles
 macd-SEAL/cmake_install.cmake
