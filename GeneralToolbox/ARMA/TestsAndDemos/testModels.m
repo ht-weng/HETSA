@@ -1,7 +1,6 @@
-addpath('./Linear/Models')
-addpath('./Linear/CorrelationFunctions')
-addpath('./Linear/AutoregressiveModel')
-
+addpath('./Models')
+addpath('./CorrelationFunctions')
+addpath('./AutoregressiveModel')
 
 %% Generate innovations
 rng default
@@ -56,7 +55,6 @@ acf2 = autocorr(arma1, length(arma1) - 1);
 disp(['Error in ACF estiomation:', num2str(norm(acf1 - acf2)) ]);
 plotCorrelationFunction(acf1, 20);
 plotCorrelationFunction(acf2, 20);
-
 
 pacf1 = partialAutoCorrelation(ar3');
 pacf2 = parcorr(ar3, length(ar3) - 1);

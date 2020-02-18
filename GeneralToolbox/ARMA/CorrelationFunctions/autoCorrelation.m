@@ -1,9 +1,9 @@
 function [gamma, significance] = autoCorrelation(x)
     if(size(x, 1) > size(x, 2))
-         disp('Make sure that timeseries are stored as rows');
-         gamma = [];
-         significance = [];
-         return;
+        disp('Make sure that timeseries are stored as rows');
+        gamma = [];
+        significance = [];
+        return;
     end
     % remove the mean value
     x = x - mean(x);

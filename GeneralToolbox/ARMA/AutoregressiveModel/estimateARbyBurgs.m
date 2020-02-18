@@ -6,12 +6,12 @@ function [phi, error, pacf, significance] = estimateARbyBurgs(x, order)
 % error estimated variance
 % Gamma estimetad covariance matrix of the estimated pacf:s
     if(size(x, 1) > size(x, 2))
-         disp('Make sure that timeseries are stored as rows');
-         phi = [];
-         error = [];
-         pacf = [];
-         significance = [];         
-         return;
+        disp('Make sure that timeseries are stored as rows');
+        phi = [];
+        error = [];
+        pacf = [];
+        significance = [];         
+        return;
     end
     sampleSize = length(x);
     % d = x' * x - (x(1)^2 - x(n)^2);
@@ -36,28 +36,28 @@ function [phi, error, pacf, significance] = estimateARbyBurgs(x, order)
             sigma2 = 0.5 * (1 - phi_kk(k)^2) * d/((sampleSize-k));
             d = (((1 - phi_kk(k)^2)) * d) - v(k+1)^2 - u(sampleSize)^2;
     end
-    
-   % Run Durbin-Levinson algorithm with given PACF phi_kk
-   covVals = autoCorrelation(x);
-   PHI(1, 1) = phi_kk(1);
-   %nu(0) contains value of covariance at lag 0 i.e. covVals(1) in Matlab
-   nu(1) = covVals(1) * (1 - PHI(1, 1)^2);
-   for k = 2:min(order, length(covVals) - 1)
-       % Take values of PACF from Burg estimates
-       PHI(k, k) = phi_kk(k);
-       % Calculate phi(n, 1), phi(n, 2),...,phi(n, n-1)
-       PHI(k, 1:k-1) =  PHI(k - 1, 1:k-1) - PHI(k, k) * PHI(k - 1, (k-1):-1:1);
-   end
-   pacf = diag(PHI);
-   significance  = (abs(pacf) > (1.96 / sqrt(sampleSize)));   
-   phi = PHI(k, :);
-   order = max(find(significance~=0));
-   if (order == 0)
-        phi = 1;
-        pacf = 1;
-   else
-       phi = PHI(order,:);
-       pacf = [1; pacf];
-   end   
-   error = sigma2;
+
+    % Run Durbin-Levinson algorithm with given PACF phi_kk
+    covVals = autoCorrelation(x);
+    PHI(1, 1) = phi_kk(1);
+    %nu(0) contains value of covariance at lag 0 i.e. covVals(1) in Matlab
+    nu(1) = covVals(1) * (1 - PHI(1, 1)^2);
+    for k = 2:min(order, length(covVals) - 1)
+        % Take values of PACF from Burg estimates
+        PHI(k, k) = phi_kk(k);
+        % Calculate phi(n, 1), phi(n, 2),...,phi(n, n-1)
+        PHI(k, 1:k-1) =  PHI(k - 1, 1:k-1) - PHI(k, k) * PHI(k - 1, (k-1):-1:1);
+    end
+    pacf = diag(PHI);
+    significance  = (abs(pacf) > (1.96 / sqrt(sampleSize)));   
+    phi = PHI(k, :);
+    order = max(find(significance~=0));
+    if (order == 0)
+            phi = 1;
+            pacf = 1;
+    else
+        phi = PHI(order,:);
+        pacf = [1; pacf];
+    end   
+    error = sigma2;
 end

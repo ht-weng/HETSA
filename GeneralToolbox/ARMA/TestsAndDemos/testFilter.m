@@ -1,6 +1,6 @@
-addpath('./Linear/Models')
-addpath('./Linear/CorrelationFunctions')
-addpath('./Linear/AutoregressiveModel')
+addpath('./Models')
+addpath('./CorrelationFunctions')
+addpath('./AutoregressiveModel')
 
 %% Generate timeseries to be tested
 t = linspace(0,2*pi,100);
@@ -27,7 +27,7 @@ y1 = filter(b, a, x, [], 2);
 y2 = armaFilter(b, a, x);
 
 figure, hold on;
-plot(t,x)
+plot(t, x)
 plot(t, y1, '-.')
 plot(t, y2, 'linewidth', 2)
 legend({'x_1','x_2', 'y_1(x_1)', 'y_1(x_2)', 'y_2(x_1)', 'y_2(x_2)'}, 'Orientation', 'vertical', 'Location', 'NorthWest');
@@ -36,12 +36,12 @@ title('Exponential Moving Average')
 % Prepare the coefficients
 [b, a] = yulewalk(5, [0 0.5 0.5 1], [1 1 0 0]);
 % Visualize filter frequecny respone
-[h,w] = freqz(b, a, 128);
+[h, w] = freqz(b, a, 128);
 % figure, plot(w/pi,abs(h),f,m,'--')
 % xlabel 'Radian frequency (\omega/\pi)', ylabel Magnitude
 % legend('Yule-Walker','Ideal'), legend boxoff
 
-y1 = filter(b,a,x);
+y1 = filter(b, a, x);
 y2 = armaFilter(b, a, x);
 
 figure, hold on

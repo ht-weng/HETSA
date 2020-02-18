@@ -1,6 +1,6 @@
-addpath('./Linear/Models')
-addpath('./Linear/CorrelationFunctions')
-addpath('./Linear/AutoregressiveModel')
+addpath('./Models')
+addpath('./CorrelationFunctions')
+addpath('./AutoregressiveModel')
 
 %% Generate innovations
 rng default
@@ -8,7 +8,7 @@ sampleSize = 1000;
 inputSignal = (randn(1,sampleSize));
 
 % Test AR estimation using Durbin Levinson
-ar_coefs = [1 -0.4 .2];
+ar_coefs = [1 - 0.4 .2];
 rng default
 ar_process = arModel(inputSignal, ar_coefs);
 
@@ -24,7 +24,6 @@ plot(ar2, 'linewidth', 2, 'Linestyle', ':');
 legend({'AR1','AR2'}, 'Orientation', 'vertical', 'Location', 'NorthWest');
 title('Autoregressive Model')
 
-
 % Test AR estimation using Burg
 [ar_coefs_est, error, pacf, significance ]= estimateARbyBurgs(ar_process, length(ar_coefs));
 
@@ -36,7 +35,6 @@ plot(ar1, 'linewidth', 2);
 plot(ar2, 'linewidth', 2, 'Linestyle', ':');
 legend({'AR1','AR2'}, 'Orientation', 'vertical', 'Location', 'NorthWest');
 title('Autoregressive Model')
-
 
 % Test MA estimation using Burg
 ma_coefs = [0.8 -0.1];

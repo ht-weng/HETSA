@@ -2,7 +2,6 @@ function x = autoregressiveModel(z, mu, phis)
     zLen = length(z);
     phisLen = length(phis);
     
-    
     % pre-locate memory
     x = mu*ones(zLen, 1);
 
