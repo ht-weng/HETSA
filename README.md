@@ -18,17 +18,19 @@ Haotian Weng, Hanna Suominen, Artem Lenskiy
 
 To demonstrate the capabilities of the proposed framework we present a number of use cases.
 
+```bash
 GeneralToolbox
     ├── ARMA - To be implemented in homomorphic encryption context
     │
     ├── FinancialApplications
-    │   ├── macd-HEAAN
-    │   │
-    │   ├── macd-Plaintext
-    │   │
-    │   └── macd-SEAL
+    │   ├── macd-HEAAN
+    │   │
+    │   ├── macd-Plaintext
+    │   │
+    │   └── macd-SEAL
     │
     └── MedicalApplications - TODO
+```
 
 ### General Toolbox - Autoregressive Moving Average Model
 
