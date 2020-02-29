@@ -54,9 +54,13 @@ In this application, the HETSA library is employed to detect diabetes through th
 
 ## Getting started  
 
-### General Toolbox - ARMA
+### General Toolbox Implementation
 
-Run the test cases in ARMA/TestsAndDemos in MATLAB.
+#### ARMA in Plaintext
+
+Run the test cases in ARMA-Plaintext/TestsAndDemos in MATLAB.
+
+#### AR model with HEAAN
 
 ### Financial Application
 
