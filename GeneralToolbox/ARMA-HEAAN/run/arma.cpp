@@ -1,7 +1,7 @@
 /*
 * Autoregressive model with HEAAN Library
 * The results are output into the data folder
-* Run ema-heaan.ipynb to visualise the results
+* Run ar-heaan.ipynb to visualise the results
 */
 #include <cstddef>
 #include <iostream>
