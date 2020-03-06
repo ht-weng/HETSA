@@ -20,7 +20,7 @@ To demonstrate the capabilities of the proposed framework we present the followi
 
 ```bash
 GeneralToolbox
-    ├── Linear Model: ARMA - Currently implemented with plaintext data
+    ├── Linear Model: ARMA, EMA
     │
     ├── Non-linear Model: ESN - TODO
     │

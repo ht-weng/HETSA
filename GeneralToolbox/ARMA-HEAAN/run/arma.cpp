@@ -100,7 +100,7 @@ inline vector<Ciphertext> slice(vector<Ciphertext>& vec, long start , long end) 
 // ***************************************************************************************************
 
 // Return the weighted moving averages of the input Ciphertexts in a moving window
-inline Ciphertext ema(vector<Ciphertext>& data, Ciphertext prev_ema, long m, Scheme &scheme, long logq, long logp) {
+inline Ciphertext ar(vector<Ciphertext>& data, long p, Scheme &scheme, long logq, long logp) {
 
     complex<double> multiplier1;
     multiplier1.real(2.0/float(m+1));
