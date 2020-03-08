@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/Users/justin/Desktop/HE/HETSA/macd-SEAL/macd.cpp
+/Users/justin/Desktop/HE/HETSA/GeneralToolbox/FinancialApplications/macd-SEAL/macd.cpp
 cstddef
 -
 iostream
@@ -48,7 +48,7 @@ stdlib.h
 chrono
 -
 seal/seal.h
-/Users/justin/Desktop/HE/HETSA/macd-SEAL/seal/seal.h
+/Users/justin/Desktop/HE/HETSA/GeneralToolbox/FinancialApplications/macd-SEAL/seal/seal.h
 
 /usr/local/include/SEAL-3.4/seal/batchencoder.h
 vector

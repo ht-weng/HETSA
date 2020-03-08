@@ -1,4 +1,4 @@
-# Install script for directory: /Users/justin/Desktop/HE/HETSA/macd-SEAL
+# Install script for directory: /Users/justin/Desktop/HE/HETSA/GeneralToolbox/FinancialApplications/macd-SEAL
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,5 +40,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/Users/justin/Desktop/HE/HETSA/macd-SEAL/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/Users/justin/Desktop/HE/HETSA/GeneralToolbox/FinancialApplications/macd-SEAL/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

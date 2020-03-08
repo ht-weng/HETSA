@@ -399,19 +399,25 @@ inline vector<Ciphertext> wma(vector<Ciphertext>& data, int n, int level, CKKSEn
 // Decision(t) > 0 means "Buy"
 // Decision(t) < 0 means "Sell"
 // We use a polynomial approximation of tanh to approximate sign function
-// The approximation of sign function: f(x) = 0.00002635*x^8-0.0003472*x^6+0.0052083*x^4-0.2*x^2+0.25*x-0.061 
+// The approximation of sign function: f(x) = -0.0001*x^9+0.0003*x^8+0.0025*x^7-0.009*x^6 \
+    -0.0253*x^5+0.0984*x^4+0.0882*x^3-0.5173*x^2+0.4475*x-0.0753
 // where x = m(t)*m(t-1)
 inline vector<Ciphertext> decision(vector<Ciphertext> macd_encrypted, int level, double norm, CKKSEncoder &encoder, 
         Encryptor &encryptor, Evaluator &evaluator, RelinKeys &relin_keys, double scale, parms_id_type *parms_ids) {
     
      // Set up coefficients
-    Plaintext coeff1_plain, coeff2_plain, coeff3_plain, coeff4_plain, coeff5_plain, coeff6_plain, coeff_norm_plain;
-    encoder.encode(0.00002635, scale, coeff1_plain);
-    encoder.encode((-0.0003472), scale, coeff2_plain);
-    encoder.encode(0.0052083, scale, coeff3_plain);
-    encoder.encode((-0.2), scale, coeff4_plain);
-    encoder.encode(0.25, scale, coeff5_plain);
-    encoder.encode((-0.061), scale, coeff6_plain);
+    Plaintext coeff0_plain, coeff1_plain, coeff2_plain, coeff3_plain, coeff4_plain, coeff5_plain, coeff6_plain,
+        coeff7_plain, coeff8_plain, coeff9_plain, coeff_norm_plain;
+    encoder.encode((-0.0753), scale, coeff0_plain);
+    encoder.encode(0.4475, scale, coeff1_plain);
+    encoder.encode((-0.5173), scale, coeff2_plain);
+    encoder.encode(0.0882, scale, coeff3_plain);
+    encoder.encode(0.0984, scale, coeff4_plain);
+    encoder.encode((-0.0253), scale, coeff5_plain);
+    encoder.encode((-0.009), scale, coeff6_plain);
+    encoder.encode(0.0025, scale, coeff7_plain);
+    encoder.encode(0.0003, scale, coeff8_plain);
+    encoder.encode((-0.0001), scale, coeff9_plain);
     encoder.encode(norm, scale, coeff_norm_plain);
 
     vector<Ciphertext> decisions_encrypted;
@@ -448,22 +454,46 @@ inline vector<Ciphertext> decision(vector<Ciphertext> macd_encrypted, int level,
         evaluator.rescale_to_next_inplace(x2_encrypted);
         x2_encrypted.scale() = scale;
 
+        // Calculate x^3, which is at level 6
+        // x is at level 4, x^2 is at level 5, switch mod of x to level 5
+        Ciphertext x3_encrypted;
+        evaluator.mod_switch_to_inplace(x_encrypted, parms_ids[level+3]);
+        evaluator.multiply(x_encrypted, x2_encrypted, x3_encrypted);
+        evaluator.relinearize_inplace(x3_encrypted, relin_keys);
+        evaluator.rescale_to_next_inplace(x3_encrypted);
+        x3_encrypted.scale() = scale;
+
         // Calculate x^4, which is at level 6
-        // x^2 is at level 5, switch mod to ensure parameters id match
         Ciphertext x4_encrypted;
         evaluator.square(x2_encrypted, x4_encrypted);
         evaluator.relinearize_inplace(x4_encrypted, relin_keys);
         evaluator.rescale_to_next_inplace(x4_encrypted);
         x4_encrypted.scale() = scale;
 
-        // Calculate x^6, which is at level 7
-        // x^4 is at level 6, switch mod to ensure parameters id match
-        Ciphertext x6_encrypted;
+        // Calculate x^5, which is at level 7
+        // x^2 is at level 5, x^3 is at level 6, swith mod of x^2 to level 6
+        Ciphertext x5_encrypted;
         evaluator.mod_switch_to_inplace(x2_encrypted, parms_ids[level+4]);
+        evaluator.multiply(x3_encrypted, x2_encrypted, x5_encrypted);
+        evaluator.relinearize_inplace(x5_encrypted, relin_keys);
+        evaluator.rescale_to_next_inplace(x5_encrypted);
+        x5_encrypted.scale() = scale;
+
+        // Calculate x^6, which is at level 7
+        // x^4 is at level 6, x^2 is at level 6
+        Ciphertext x6_encrypted;
         evaluator.multiply(x2_encrypted, x4_encrypted, x6_encrypted);
         evaluator.relinearize_inplace(x6_encrypted, relin_keys);
         evaluator.rescale_to_next_inplace(x6_encrypted);
         x6_encrypted.scale() = scale;
+
+        // Calculate x^7, which is at level 7
+        // x^4 is at level 6, x^3 is at level 6
+        Ciphertext x7_encrypted;
+        evaluator.multiply(x3_encrypted, x4_encrypted, x7_encrypted);
+        evaluator.relinearize_inplace(x7_encrypted, relin_keys);
+        evaluator.rescale_to_next_inplace(x7_encrypted);
+        x7_encrypted.scale() = scale;
 
         // Calculate x^8, which is at level 7
         Ciphertext x8_encrypted;        
@@ -472,59 +502,104 @@ inline vector<Ciphertext> decision(vector<Ciphertext> macd_encrypted, int level,
         evaluator.rescale_to_next_inplace(x8_encrypted);
         x8_encrypted.scale() = scale;
 
-        // Calculate 0.00002635*x^8, which is at level 8
-        // x^8 is at level 7, switch mod to ensure parameters id match
-        evaluator.mod_switch_to_inplace(coeff1_plain, parms_ids[level+5]);
-        evaluator.multiply_plain_inplace(x8_encrypted, coeff1_plain);
+        // Calculate x^9, which is at level 8
+        // x^5 is at level 7, x^4 is at level 6, switch mod of x^4 to level 7
+        Ciphertext x9_encrypted;
+        evaluator.mod_switch_to_inplace(x4_encrypted, parms_ids[level+5]);
+        evaluator.multiply(x4_encrypted, x5_encrypted, x9_encrypted);
+        evaluator.relinearize_inplace(x9_encrypted, relin_keys);
+        evaluator.rescale_to_next_inplace(x9_encrypted);
+        x9_encrypted.scale() = scale;
+
+        // Calculate -0.0001*x^9, which is at level 9
+        // x^9 is at level 8
+        evaluator.mod_switch_to_inplace(coeff9_plain, parms_ids[level+6]);
+        evaluator.multiply_plain_inplace(x9_encrypted, coeff9_plain);
+        evaluator.rescale_to_next_inplace(x9_encrypted);
+        x9_encrypted.scale() = scale;
+
+        // Calculate 0.0003*x^8, which is at level 8
+        // x^8 is at level 7
+        evaluator.mod_switch_to_inplace(coeff8_plain, parms_ids[level+5]);
+        evaluator.multiply_plain_inplace(x8_encrypted, coeff8_plain);
         evaluator.rescale_to_next_inplace(x8_encrypted);
         x8_encrypted.scale() = scale;
 
-        // Calculate -0.0003472*x^6, which is at level 8
-        // x^6 is at level 7, switch mod to ensure parameters id match
-        evaluator.mod_switch_to_inplace(coeff2_plain, parms_ids[level+5]);
-        evaluator.multiply_plain_inplace(x6_encrypted, coeff2_plain);
+        // Calculate 0.0025*x^7, which is at level 8
+        // x^7 is at level 7
+        evaluator.mod_switch_to_inplace(coeff7_plain, parms_ids[level+5]);
+        evaluator.multiply_plain_inplace(x7_encrypted, coeff7_plain);
+        evaluator.rescale_to_next_inplace(x7_encrypted);
+        x7_encrypted.scale() = scale;
+
+        // Calculate -0.009*x^6, which is at level 8
+        // x^6 is at level 7
+        evaluator.mod_switch_to_inplace(coeff6_plain, parms_ids[level+5]);
+        evaluator.multiply_plain_inplace(x6_encrypted, coeff6_plain);
         evaluator.rescale_to_next_inplace(x6_encrypted);
         x6_encrypted.scale() = scale;
 
-        // Calculate 0.0052083*x^4, which is at level 7
-        // x^4 is at level 6, switch mod to ensure parameters id match
-        evaluator.mod_switch_to_inplace(coeff3_plain, parms_ids[level+4]);
-        evaluator.multiply_plain_inplace(x4_encrypted, coeff3_plain);
+        // Calculate -0.0253*x^5, which is at level 8
+        // x^5 is at level 7
+        evaluator.mod_switch_to_inplace(coeff5_plain, parms_ids[level+5]);
+        evaluator.multiply_plain_inplace(x5_encrypted, coeff5_plain);
+        evaluator.rescale_to_next_inplace(x5_encrypted);
+        x5_encrypted.scale() = scale;
+
+        // Calculate 0.0984*x^4, which is at level 8
+        // x^4 is at level 7 (we switched the mod of x^4 to level 7)
+        evaluator.mod_switch_to_inplace(coeff4_plain, parms_ids[level+5]);
+        evaluator.multiply_plain_inplace(x4_encrypted, coeff4_plain);
         evaluator.rescale_to_next_inplace(x4_encrypted);
         x4_encrypted.scale() = scale;
 
-        // Calculate -0.2*x^2, which is at level 7
-        // Note that previously we haved switched x^2's level to 6
-        evaluator.mod_switch_to_inplace(coeff4_plain, parms_ids[level+4]);
-        evaluator.multiply_plain_inplace(x2_encrypted, coeff4_plain);
+        // Calculate 0.0882*x^3, which is at level 7
+        // x^3 is at level 6
+        evaluator.mod_switch_to_inplace(coeff3_plain, parms_ids[level+4]);
+        evaluator.multiply_plain_inplace(x3_encrypted, coeff3_plain);
+        evaluator.rescale_to_next_inplace(x3_encrypted);
+        x3_encrypted.scale() = scale;
+
+        // Calculate -0.5173*x^2, which is at level 7
+        // x^2 is at level 6 (we switched the mod of x^2 to level 6)
+        evaluator.mod_switch_to_inplace(coeff2_plain, parms_ids[level+4]);
+        evaluator.multiply_plain_inplace(x2_encrypted, coeff2_plain);
         evaluator.rescale_to_next_inplace(x2_encrypted);
         x2_encrypted.scale() = scale;
 
-        // Calculate 0.25*x
-        // Switch mod to ensure parameters id match
-        evaluator.mod_switch_to_inplace(coeff5_plain, parms_ids[level+2]);
-        evaluator.multiply_plain_inplace(x_encrypted, coeff5_plain);
+        // Calculate 0.4475*x, which is at level 6
+        // x is at level 5 (we switched the mod of x to level 5)
+        evaluator.mod_switch_to_inplace(coeff1_plain, parms_ids[level+3]);
+        evaluator.multiply_plain_inplace(x_encrypted, coeff1_plain);
         evaluator.rescale_to_next_inplace(x_encrypted);
         x_encrypted.scale() = scale;
 
         // To do the addition, we have to ensure all the terms have same parms_id and scale
-        evaluator.mod_switch_to_inplace(x4_encrypted, parms_ids[level+6]);
-        evaluator.mod_switch_to_inplace(x2_encrypted, parms_ids[level+6]);
-        evaluator.mod_switch_to_inplace(x_encrypted, parms_ids[level+6]);
-        // evaluator.mod_switch_to_inplace(coeff6_plain, parms_ids[level+6]);
+        evaluator.mod_switch_to_inplace(x8_encrypted, parms_ids[level+7]);
+        evaluator.mod_switch_to_inplace(x7_encrypted, parms_ids[level+7]);
+        evaluator.mod_switch_to_inplace(x6_encrypted, parms_ids[level+7]);
+        evaluator.mod_switch_to_inplace(x5_encrypted, parms_ids[level+7]);
+        evaluator.mod_switch_to_inplace(x4_encrypted, parms_ids[level+7]);
+        evaluator.mod_switch_to_inplace(x3_encrypted, parms_ids[level+7]);
+        evaluator.mod_switch_to_inplace(x2_encrypted, parms_ids[level+7]);
+        evaluator.mod_switch_to_inplace(x_encrypted, parms_ids[level+7]);
+        evaluator.mod_switch_to_inplace(coeff0_plain, parms_ids[level+7]);
 
-        // Calculate 0.00002635*x^8-0.0003472*x^6+0.0052083*x^4-0.2*x^2+0.25*x-0.061
+        // Calculate f(x)
         Ciphertext sign_encrypted;
-        evaluator.add(x8_encrypted, x6_encrypted, sign_encrypted);
+        evaluator.add(x9_encrypted, x8_encrypted, sign_encrypted);
+        evaluator.add_inplace(sign_encrypted, x7_encrypted);
+        evaluator.add_inplace(sign_encrypted, x6_encrypted);
+        evaluator.add_inplace(sign_encrypted, x5_encrypted);
         evaluator.add_inplace(sign_encrypted, x4_encrypted);
+        evaluator.add_inplace(sign_encrypted, x3_encrypted);
         evaluator.add_inplace(sign_encrypted, x2_encrypted);
         evaluator.add_inplace(sign_encrypted, x_encrypted);
-        evaluator.mod_switch_to_inplace(coeff6_plain, parms_ids[level+6]);
-        evaluator.add_plain_inplace(sign_encrypted, coeff6_plain);
+        evaluator.add_plain_inplace(sign_encrypted, coeff0_plain);
 
         // Calculate (m(t-1)-m(t))*(f(x)-1)
         Ciphertext result_encrypted;
-        evaluator.mod_switch_to_inplace(recent_diff, parms_ids[level+6]);
+        evaluator.mod_switch_to_inplace(recent_diff, parms_ids[level+7]);
         sign_encrypted.scale() = scale;
         recent_diff.scale() = scale;
         result_encrypted.scale() = scale;
@@ -686,10 +761,11 @@ int main()
     // level 3: norm*m(t), norm*m(t-1) // To normalize MACD signal
     // level 4: x = m(t-1)*m(t) // res_mult
     // level 5: x^2
-    // level 6: x^4
-    // level 7: x^8, x^6
-    // level 8: f(x)
-    // level 9: decision = (m(t)-m(t-1))*(f(x)-1)
+    // level 6: x^3, x^4
+    // level 7: x^5, x^6, x^7, x^8
+    // level 8: x^9
+    // level 9: f(x)
+    // level 10: decision = (m(t)-m(t-1))*(f(x)-1)
 
     vector<Ciphertext> decisions_encrypted = decision(macd_encrypted, 2, 0.5, encoder, encryptor, 
         evaluator, relin_keys, scale, parms_ids);

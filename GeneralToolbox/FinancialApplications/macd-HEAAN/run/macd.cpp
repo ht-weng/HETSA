@@ -240,19 +240,24 @@ inline vector<Ciphertext> wma(vector<Ciphertext>& data, long m, Scheme &scheme, 
 // Decision(t) > 0 means "Buy"
 // Decision(t) < 0 means "Sell"
 // We use a polynomial approximation of tanh to approximate sign function
-// The approximation of sign function: f(x) = 0.00002635*x^8-0.0003472*x^6+0.0052083*x^4-0.2*x^2+0.25*x-0.061
+// The approximation of sign function: f(x) = -0.0001*x^9+0.0003*x^8+0.0025*x^7-0.009*x^6 \
+    -0.0253*x^5+0.0984*x^4+0.0882*x^3-0.5173*x^2+0.4475*x-0.0753
 // where x = m(t)*m(t-1)
 inline vector<Ciphertext> decision(vector<Ciphertext>& macd, double norm, Scheme &scheme, long logq, long logp) {
     vector<Ciphertext> decisions;
 
     // Set up coefficients
-    complex<double> coeff1, coeff2, coeff3, coeff4, coeff5, coeff6, coeff_norm;
-    coeff1.real(0.00002635);
-    coeff2.real(-0.0003472);
-    coeff3.real(0.0052083);
-    coeff4.real(-0.2);
-	coeff5.real(0.25);
-    coeff6.real(-0.061);
+    complex<double> coeff0, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6, coeff7, coeff8, coeff9, coeff_norm;
+    coeff0.real(-0.0753);
+    coeff1.real(0.4475);
+    coeff2.real(-0.5173);
+    coeff3.real(0.0882);
+    coeff4.real(0.0984);
+	coeff5.real(-0.0253);
+    coeff6.real(-0.009);
+    coeff7.real(0.0025);
+    coeff8.real(0.0003);
+    coeff9.real(-0.0001);
     coeff_norm.real(norm);
 
     for (int i = 1; i < macd.size(); i++) {
@@ -280,10 +285,22 @@ inline vector<Ciphertext> decision(vector<Ciphertext>& macd, double norm, Scheme
         scheme.square(x2_encrypted, x_encrypted);
         scheme.reScaleByAndEqual(x2_encrypted, logp);
 
+        // Calculate x^3
+        Ciphertext x3_encrypted;
+        scheme.modDownToAndEqual(x_encrypted, x2_encrypted.logq);
+        scheme.mult(x3_encrypted, x2_encrypted, x_encrypted);
+        scheme.reScaleByAndEqual(x3_encrypted, logp);
+
         // Calculate x^4
         Ciphertext x4_encrypted;
         scheme.square(x4_encrypted, x2_encrypted);
         scheme.reScaleByAndEqual(x4_encrypted, logp);
+
+        // Calculate x^5
+        Ciphertext x5_encrypted;
+        scheme.modDownToAndEqual(x_encrypted, x4_encrypted.logq);
+        scheme.mult(x5_encrypted, x4_encrypted, x_encrypted);
+        scheme.reScaleByAndEqual(x5_encrypted, logp);
 
         // Calculate x^6
         Ciphertext x6_encrypted;
@@ -291,41 +308,78 @@ inline vector<Ciphertext> decision(vector<Ciphertext>& macd, double norm, Scheme
         scheme.mult(x6_encrypted, x4_encrypted, x2_encrypted);
         scheme.reScaleByAndEqual(x6_encrypted, logp);
 
+        // Calculate x^7
+        Ciphertext x7_encrypted;
+        // scheme.modDownToAndEqual(x_encrypted, x6_encrypted.logq);
+        scheme.mult(x7_encrypted, x4_encrypted, x3_encrypted);
+        scheme.reScaleByAndEqual(x7_encrypted, logp);
+
         // Calculate x^8
         Ciphertext x8_encrypted;
         scheme.square(x8_encrypted, x4_encrypted);
         scheme.reScaleByAndEqual(x8_encrypted, logp);
 
-        // Calculate 0.00002635*x^8
-        scheme.multByConstAndEqual(x8_encrypted, coeff1, logp);
+        // Calculate x^9
+        Ciphertext x9_encrypted;
+        scheme.modDownToAndEqual(x4_encrypted, x5_encrypted.logq);
+        scheme.mult(x9_encrypted, x5_encrypted, x4_encrypted);
+        scheme.reScaleByAndEqual(x9_encrypted, logp);
+
+        // Calculate -0.0001*x^9
+        scheme.multByConstAndEqual(x9_encrypted, coeff9, logp);
+        scheme.reScaleByAndEqual(x9_encrypted, logp);
+
+        // Calculate 0.0003*x^8
+        scheme.multByConstAndEqual(x8_encrypted, coeff8, logp);
         scheme.reScaleByAndEqual(x8_encrypted, logp);
 
-        // Calculate -0.0003472*x^6
-        scheme.multByConstAndEqual(x6_encrypted, coeff2, logp);
+        // Calculate 0.0025*x^7
+        scheme.multByConstAndEqual(x7_encrypted, coeff7, logp);
+        scheme.reScaleByAndEqual(x7_encrypted, logp);
+
+        // Calculate  -0.009*x^6
+        scheme.multByConstAndEqual(x6_encrypted, coeff6, logp);
         scheme.reScaleByAndEqual(x6_encrypted, logp);
 
-        // Calculate 0.0052083*x^4
-        scheme.multByConstAndEqual(x4_encrypted, coeff3, logp);
+        // Calculate  -0.0253*x^5
+        scheme.multByConstAndEqual(x5_encrypted, coeff5, logp);
+        scheme.reScaleByAndEqual(x5_encrypted, logp);
+
+        // Calculate 0.0984*x^4
+        scheme.multByConstAndEqual(x4_encrypted, coeff4, logp);
         scheme.reScaleByAndEqual(x4_encrypted, logp);
 
-        // Calculate -0.2*x^2
-        scheme.multByConstAndEqual(x2_encrypted, coeff4, logp);
+        // Calculate 0.0882*x^3
+        scheme.multByConstAndEqual(x3_encrypted, coeff3, logp);
+        scheme.reScaleByAndEqual(x3_encrypted, logp);
+
+        // Calculate -0.5173*x^2
+        scheme.multByConstAndEqual(x2_encrypted, coeff2, logp);
         scheme.reScaleByAndEqual(x2_encrypted, logp);
 
-        // Calculate 0.25*x
-        scheme.multByConstAndEqual(x_encrypted, coeff5, logp);
+        // Calculate 0.4475*x
+        scheme.multByConstAndEqual(x_encrypted, coeff1, logp);
         scheme.reScaleByAndEqual(x_encrypted, logp);
 
-        // Calculate 0.00002635*x^8-0.0003472*x^6+0.0052083*x^4-0.2*x^2+0.25*x-0.061 
+        // Calculate f(x)
         Ciphertext sign_encrypted;
-        scheme.add(sign_encrypted, x8_encrypted, x6_encrypted);
+        scheme.modDownToAndEqual(x8_encrypted, x9_encrypted.logq);
+        scheme.add(sign_encrypted, x9_encrypted, x8_encrypted);
+        scheme.modDownToAndEqual(x7_encrypted, sign_encrypted.logq);
+        scheme.addAndEqual(sign_encrypted, x7_encrypted);
+        scheme.modDownToAndEqual(x6_encrypted, sign_encrypted.logq);
+        scheme.addAndEqual(sign_encrypted, x6_encrypted);
+        scheme.modDownToAndEqual(x5_encrypted, sign_encrypted.logq);
+        scheme.addAndEqual(sign_encrypted, x5_encrypted);
         scheme.modDownToAndEqual(x4_encrypted, sign_encrypted.logq);
         scheme.addAndEqual(sign_encrypted, x4_encrypted);
+        scheme.modDownToAndEqual(x3_encrypted, sign_encrypted.logq);
+        scheme.addAndEqual(sign_encrypted, x3_encrypted);
         scheme.modDownToAndEqual(x2_encrypted, sign_encrypted.logq);
         scheme.addAndEqual(sign_encrypted, x2_encrypted);
         scheme.modDownToAndEqual(x_encrypted, sign_encrypted.logq);
         scheme.addAndEqual(sign_encrypted, x_encrypted);
-        scheme.addConstAndEqual(sign_encrypted, coeff6, logp);
+        scheme.addConstAndEqual(sign_encrypted, coeff0, logp);
 
         // Calculate (m(t-1)-m(t))*(f(x)-1)
         Ciphertext result_encrypted;
