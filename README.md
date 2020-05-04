@@ -4,7 +4,7 @@
 
 The aim of this project is to develop a framework for analysing homomorphically encrypted time series (HETSA). Namely, we will implement a set of building blocks for time series analysis and showcase them on the following applications: First, to demonstrate the capabilities of real-time processing, we will implement a set of trading strategies that make trading decisions on encrypted market data. Second, to demonstrate the developed signal analysis tools, we will analyse encrypted heart rate variability of patients with diabetes that consequently will support clinical judgement and decision-making. Third, to show the versatility, we will implement a set of general time-series analysis tools in homomorphic encryption context. Furthermore, we will develop a bootstrapping technique that provides the means for real time data processing. We believe that focusing on these areas, where issues surrounding privacy play a crucial role, will not only showcase the potential of the proposed framework, but also ignite further research and development.  
 
-This project is based on the [paper](https://arxiv.org/abs/2004.11527) that has been accepted as a Short Paper by the 17th International Conference on Security and Cryptography (SECRYPT).
+Preliminary results of this project have been accepted in the form of a short [paper](https://arxiv.org/abs/2004.11527) by the 17th International Conference on Security and Cryptography (SECRYPT).
 
 ## Current problems and limmitations
 
@@ -12,7 +12,7 @@ The idea of homomorphic encryption was proposed in the 1970s as a solution to pr
 
 Nevertheless, existing libraries have a number of limitations: First, an array of open source libraries that implement homomorphic encryption schemes are available to choose from, and thereby, complicate the decision to choose the most relevant one. Second, these libraries are relatively low-level and implement elementary operations such as addition and multiplication, hence, making the implementation of data analysis algorithms arduous. Third, scalars, vectors, and matrices are mapped to sets of coefficients that make the union and intersection operations over encrypted datasets either impossible or tedious, thus making the process of real-time time series analysis cumbersome. Last but not least, as the state-of-art [bootstrapping method in CKKS scheme](https://eprint.iacr.org/2018/153.pdf) is inefficient and impractical, at the moment the multiplication level of our algorithms is restricted by the parameters of the CKKS scheme and thus it is difficult to implement recursive algorithms.  
 
-## Developers
+## Team
 
 Haotian Weng, Hanna Suominen, Artem Lenskiy
 
