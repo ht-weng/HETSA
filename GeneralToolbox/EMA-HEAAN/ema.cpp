@@ -23,7 +23,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <chrono>
-#include "../src/HEAAN.h"
+#include "../../HEAAN/src/HEAAN.h"
 
 using namespace std;
 using namespace std::chrono;
