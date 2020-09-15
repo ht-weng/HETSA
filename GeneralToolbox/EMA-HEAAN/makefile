@@ -7,7 +7,7 @@ all: clean EMA
 EMA:
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ ema.cpp -o EMA -L/usr/local/lib ../../HEAAN/lib/libHEAAN.a -lntl -lgmp -lm -std=c++11 -O2 -I/../../HEAAN/src -pthread
+	g++ ema.cpp -o EMA -L/usr/local/lib ../../HEAAN/lib/libHEAAN.a -lntl -lgmp -lm -std=c++11 -O2 -I ../../HEAAN/src -pthread
 	@echo 'Finished building target: $@'
 	@echo ' '
 

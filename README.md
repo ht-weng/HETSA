@@ -64,8 +64,11 @@ In this application, the HETSA library is employed to detect diabetes through th
 
 [Microsoft SEAL Library](https://github.com/Microsoft/SEAL)  
 [HEAAN Library](https://github.com/snucrypto/HEAAN)  
+[NTL](https://www.shoup.net/ntl/doc/tour-unix.html)  
 cmake  
 gcc/g++
+
+NTL has to be installed first as HEAAN uses it.
 
 Microsoft SEAL Library needs to be installed beforehand from the above link.  
 

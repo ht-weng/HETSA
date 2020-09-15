@@ -1,7 +1,7 @@
 /*
-* Autoregressive model with HEAAN Library
+* exponential moving average model with HEAAN Library
 * The results are output into the data folder
-* Run ema-heaan.ipynb to visualise the results
+* Run ema.ipynb to visualise the results
 */
 #include <cstddef>
 #include <iostream>
@@ -23,6 +23,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <chrono>
+#include <iterator>
 #include "../../HEAAN/src/HEAAN.h"
 
 using namespace std;
