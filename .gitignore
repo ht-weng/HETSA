@@ -11,3 +11,5 @@ FinancialApplications/macd-SEAL/Makefile
 HEAAN/lib/libHEAAN.a
 GeneralToolbox/EMA-HEAAN/EMA
 GeneralToolbox/ARMA-HEAAN/ARMA
+HEAAN/lib/src/*
+!HEAAN/lib/src/subdir.mk
