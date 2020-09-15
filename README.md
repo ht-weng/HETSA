@@ -6,6 +6,10 @@ The aim of this project is to develop a framework for analysing homomorphically 
 
 The trading strategy on encrypted market data has been implemented and accepted in the form of a short [paper](https://www.scitepress.org/Documents/2020/98357/) by the 17th International Conference on Security and Cryptography (SECRYPT). The source codes are located in the FinancialApplications folder.
 
+The goal of this project includes implementing a variety of time series analysing algorithms and a wrapper based on several homomorphic encryption libraries.
+
+![The structure of the toolbox](toolbox-structure.png)
+
 ## Current problems and limitations
 
 The idea of homomorphic encryption was proposed in the 1970s as a solution to privacy-preserving computation. Modern cryptosystems are capable of performing arithmetic operations on ciphertexts, facilitating the implementation of various machine learning algorithms in the homomorphic encryption context. This is an active area of research, and therefore a multitude of encryption schemes have been proposed and implemented as open-source libraries. In particular, [BFV scheme](https://eprint.iacr.org/2012/144.pdf) only allows arithmetic operations on integers while [CKKS scheme](https://eprint.iacr.org/2016/421.pdf) supports approximate number arithmetic operations. [Microsoft SEAL Library](https://github.com/Microsoft/SEAL) supports both BFV and CKKS scheme but [HEAAN Library](https://github.com/snucrypto/HEAAN) only implements CKKS scheme.  
