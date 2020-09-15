@@ -7,7 +7,7 @@ all: clean MACD
 MACD:
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ macd.cpp -o MACD -L/usr/local/lib ../../HEAAN/lib/libHEAAN.a -lntl -lgmp -lm -std=c++11 -O2 -I/../../HEAAN/src -pthread
+	g++ macd.cpp -o MACD -L/usr/local/lib ../../HEAAN/lib/libHEAAN.a -lntl -lgmp -lm -std=c++11 -O2 -I ../../HEAAN/src -pthread
 	@echo 'Finished building target: $@'
 	@echo ' '
 

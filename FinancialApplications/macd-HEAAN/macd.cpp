@@ -23,6 +23,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <chrono>
+#include <iterator>
 #include "../../HEAAN/src/HEAAN.h"
 
 using namespace std;
