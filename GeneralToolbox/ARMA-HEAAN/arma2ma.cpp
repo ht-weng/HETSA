@@ -96,7 +96,7 @@ inline vector<Ciphertext> slice(vector<Ciphertext>& vec, long start , long end) 
 }
 
 // ***************************************************************************************************
-// MACD analysis functions
+// ARMA to MA
 // ***************************************************************************************************
 
 // Return the weighted moving averages of the input Ciphertexts in a moving window
