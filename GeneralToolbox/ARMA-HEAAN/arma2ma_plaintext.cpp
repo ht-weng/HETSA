@@ -65,9 +65,8 @@ vector<double> arma2ma(vector<double> thetas, vector<double> phis, int order) {
     for (int i = 0; i < order-1; i++) {
         result[i+1] = thetas[i+1];
 
-        // issue 1: min operation
         for (int j = 0; j < (min(i, p)+1); j++) {
-            // issue 2: multiplication levels of result[i+1] and result[i-j]*n_phis[j+1] must be the same
+            // issue: multiplication levels of result[i+1] and result[i-j]*n_phis[j+1] must be the same
             // to allow addition
             // calculating result is a recursive process
             result[i+1] = result[i+1] + result[i-j]*n_phis[j+1];
