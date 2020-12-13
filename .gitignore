@@ -14,3 +14,8 @@ GeneralToolbox/ARMA-HEAAN/ARMA
 GeneralToolbox/ARMA-HEAAN/a.out
 HEAAN/lib/src/*
 !HEAAN/lib/src/subdir.mk
+MedicalApplications/pid-SEAL/pid
+MedicalApplications/pid-SEAL/CMakeFiles
+MedicalApplications/pid-SEAL/cmake_install.cmake
+MedicalApplications/pid-SEAL/CMakeCache.txt
+MedicalApplications/pid-SEAL/Makefile
