@@ -376,18 +376,18 @@ int main() {
         error_hist.push_back(tmp_encrypted);
     }
 
-    // // Apply normal PID
-    // // All previous errors are passed into the algorithm
-    // cout << "Applying PID controller" << endl;
-    // vector<Ciphertext> result_encrypted;
-    // for (int i = 2; i < error_hist.size(); i++) {
-    //     // Vector of all previous errors
-    //     vector<Ciphertext> sliced_hist = slice(error_hist, 0, i);
-    //     // PID
-    //     Ciphertext tmp = pid_controller(sliced_hist, encoder, evaluator, decryptor, relin_keys, scale);
-    //     // Store PID signal
-    //     result_encrypted.push_back(tmp);
-    // }
+    // Apply normal PID
+    // All previous errors are passed into the algorithm
+    cout << "Applying PID controller" << endl;
+    vector<Ciphertext> result_encrypted;
+    for (int i = 2; i < error_hist.size(); i++) {
+        // Vector of all previous errors
+        vector<Ciphertext> sliced_hist = slice(error_hist, 0, i);
+        // PID
+        Ciphertext tmp = pid_controller(sliced_hist, encoder, evaluator, decryptor, relin_keys, scale);
+        // Store PID signal
+        result_encrypted.push_back(tmp);
+    }
 
     // Apply recursive PID
     // Only the last two errors and the previous sum are passed into the algorithm
@@ -395,14 +395,11 @@ int main() {
     vector<Ciphertext> result_rec_encrypted;
     vector<Ciphertext> prev_sum_vec;
     // Initialisation
-    Plaintext zero_plain;
-    encoder.encode((0), scale, zero_plain);
-    Ciphertext zero_encrypted;
-    encryptor.encrypt(zero_plain, zero_encrypted);
+    Ciphertext init_sum = error_hist[0];
     // Vector of the first two errors
     vector<Ciphertext> sliced_hist_rec = slice(error_hist, 0, 2);
     // Generate the first signal
-    tuple<Ciphertext, Ciphertext> tup = pid_controller_recursive(sliced_hist_rec, encoder, evaluator, decryptor, relin_keys, scale, zero_encrypted);
+    tuple<Ciphertext, Ciphertext> tup = pid_controller_recursive(sliced_hist_rec, encoder, evaluator, decryptor, relin_keys, scale, init_sum);
     // Store the first signal and sum of the first two errors
     result_rec_encrypted.push_back(get<0>(tup));
     prev_sum_vec.push_back(get<1>(tup));
@@ -430,7 +427,7 @@ int main() {
     // Vector of the first two errors
     vector<Ciphertext> sliced_hist_reenc = slice(error_hist, 0, 2);
     // Generate the first signal
-    tuple<Ciphertext, Ciphertext> tup_reenc = pid_controller_recursive(sliced_hist_reenc, encoder, evaluator, decryptor, relin_keys, scale, zero_encrypted);
+    tuple<Ciphertext, Ciphertext> tup_reenc = pid_controller_recursive(sliced_hist_reenc, encoder, evaluator, decryptor, relin_keys, scale, init_sum);
     // Store the first signal and sum of the first two errors
     result_reenc_encrypted.push_back(get<0>(tup_reenc));
     prev_sum_reenc_vec.push_back(get<1>(tup_reenc));
