@@ -351,7 +351,7 @@ inline tuple<Ciphertext, Ciphertext> pid_controller_recursive(vector<Ciphertext>
 // Bergman Minmod
 inline double bergman_minmod(double U) {
     // TODO
-    return U
+    return U;
 }
 
 
@@ -523,7 +523,7 @@ int main() {
         sliced_hist_rec = slice(error_hist, i-2, i);
 
         // send sliced_hist_rec to server
-        send(sock, sliced_hist_rec, sizeof(sliced_hist_rec), 0);
+        send(sock, &sliced_hist_rec, sizeof(sliced_hist_rec), 0);
 
         // tup_socket = pid_controller_recursive(sliced_hist_rec, encoder, evaluator, decryptor, 
         //     relin_keys, scale, prev_sum_vec_socket[prev_sum_vec_socket.size()-1]);
@@ -540,7 +540,7 @@ int main() {
         // Ciphertext X_encrypted;
 
         // read tup_socket from client
-        reader = read(sock, tup_socket, sizeof(tup_socket));
+        reader = read(sock, &tup_socket, sizeof(tup_socket));
         
         result_rec_socket_encrypted.push_back(get<0>(tup_socket));
         // prev_sum_vec_socket.push_back(get<1>(tup_socket));

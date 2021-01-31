@@ -357,7 +357,7 @@ inline tuple<Ciphertext, Ciphertext> pid_controller_recursive(vector<Ciphertext>
 //           Plasma Insulin(I)]
 inline double bergman_minmod(double U) {
     // dummy bergman for testing
-    return U
+    return U;
 }
 
 
@@ -393,7 +393,7 @@ int main() {
     int reencrypt_gap = 200;
 
     // Import input data
-    cout << "Reading input data" << endl;
+    // cout << "Reading input data" << endl;
     vector<Ciphertext> error_hist;
     vector<double> input = csv2vec("../data/white_noise.csv");
 
@@ -406,8 +406,8 @@ int main() {
         error_hist.push_back(tmp_encrypted);
     }
 
-    vector<double> signal_input = csv2vec("../data/signal.csv");
-    cout << endl;
+    // vector<double> signal_input = csv2vec("../data/signal.csv");
+    // cout << endl;
 
     // // Apply recursive PID with ReEncryption
     // // Only the last two errors and the previous sum are passed into the algorithm
@@ -515,7 +515,7 @@ int main() {
         // sliced_hist_rec = slice(error_hist, i-2, i);
 
         // Read hist_rec from server
-        reader = read(obj_socket, sliced_hist_rec, sizeof(sliced_hist_rec));
+        reader = read(obj_socket, &sliced_hist_rec, sizeof(sliced_hist_rec));
 
         tup_socket = pid_controller_recursive(sliced_hist_rec, encoder, evaluator, decryptor, 
             relin_keys, scale, prev_sum_vec_socket[prev_sum_vec_socket.size()-1]);
@@ -532,7 +532,7 @@ int main() {
         // Ciphertext X_encrypted;
 
         // Send tup_socket to server
-        send(obj_socket, tup_socket, sizeof(tup_socket), 0);
+        send(obj_socket, &tup_socket, sizeof(tup_socket), 0);
 
         // result_rec_socket_encrypted.push_back(get<0>(tup_socket));
         prev_sum_vec_socket.push_back(get<1>(tup_socket));
