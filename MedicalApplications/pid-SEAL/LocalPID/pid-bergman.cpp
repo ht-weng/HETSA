@@ -467,8 +467,8 @@ int main() {
         double gt1 = x[x.size()-1][0];
         double gt2 = x[x.size()-2][0];
 
-        cout << "Time point (second): " << t << endl;
-        cout << "Current glucose level: " << gt1 << endl;
+        // cout << "Time point (second): " << t << endl;
+        // cout << "Current glucose level: " << gt1 << endl;
 
         // Encrypt G(t) and G(t-1) and store them into a vector
         Plaintext gt1_plain, gt2_plain;
