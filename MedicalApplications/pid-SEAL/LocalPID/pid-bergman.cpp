@@ -353,9 +353,9 @@ inline vector<double> bergman(vector<vector<double>>& x, double U, double D) {
     double I = x[x.size()-1][2];
 
     // Parameters
-    double Gb = 4.5;
-    double Xb = 15.0;
-    double Ib = 15.0;
+    double G0 = 4.5;
+    double X0 = 15.0;
+    double I0 = 15.0;
     // For T1D, Some papers P1 = 0 to T1D
     double P1 = 0.028735;
     double P2 = 0.028344;
@@ -363,8 +363,8 @@ inline vector<double> bergman(vector<vector<double>>& x, double U, double D) {
     double VI = 12.0;
     double n = 0.09259259;
     // Minimal Model
-    double Gdt = -P1 * (G - Gb) - (X - Xb) * G + D;
-    double Xdt = -P2 * (X - Xb) + P3 * (I - Ib);
+    double Gdt = -P1 * (G - G0) - (X - X0) * G + D;
+    double Xdt = -P2 * (X - X0) + P3 * (I - I0);
     double Idt = -n * I + U/VI;
 
     vector<double> dx_dt{Gdt, Xdt, Idt};
@@ -467,8 +467,8 @@ int main() {
         double gt1 = x[x.size()-1][0];
         double gt2 = x[x.size()-2][0];
 
-        // cout << "Time point (second): " << t << endl;
-        // cout << "Current glucose level: " << gt1 << endl;
+        cout << "Time point (second): " << t << endl;
+        cout << "Current glucose level: " << gt1 << endl;
 
         // Encrypt G(t) and G(t-1) and store them into a vector
         Plaintext gt1_plain, gt2_plain;
